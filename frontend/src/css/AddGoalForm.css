@@ -1,0 +1,10 @@
+.add-goal-form {
+  position: absolute; /* or fixed/modal */
+  left: 260px; /* shift right past sidebar width */
+  top: 50px;
+  z-index: 1000; /* higher than sidebar */
+  background: #fff;
+  padding: 1em;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+}

@@ -1,0 +1,26 @@
+.goal-detail-view {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background-color: #fff;
+  border-left: 1px solid #ddd;
+}
+
+.goal-detail-view.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  font-size: 18px;
+  height: 100%;
+}
+
+.goal-actions {
+  margin-bottom: 1rem;
+}
+
+.goal-actions button {
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  cursor: pointer;
+}
