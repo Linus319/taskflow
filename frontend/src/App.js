@@ -1,8 +1,6 @@
 import './App.css';
 import { useState, useEffect, useMemo } from 'react';
 import NavBar from './components/NavBar';
-import TaskTree from './components/TaskTree';
-import GoalList from "./components/GoalList";
 import AddTaskForm from './components/AddTaskForm';
 import GoalSidebar from './components/GoalSidebar';
 import AddGoalForm from './components/AddGoalForm';
@@ -13,6 +11,7 @@ function App() {
   // const [selectedGoal, setSelectedGoal] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showAddGoalForm, setShowAddGoalForm] = useState(false);
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
 
   const [selectedGoalId, setSelectedGoalId] = useState(null);
   const selectedGoal = useMemo(() => goals.find(g => g.id === selectedGoalId), [goals, selectedGoalId]);
@@ -56,20 +55,6 @@ function App() {
     return rootTasks;
   }
 
-  // const addTask = task => setTasks(prev => [...prev, task]);
-
-  // const handleAddGoal = (title) => {
-  //   fetch('/api/goals', {
-  //     method: 'POST',
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ title })
-  //   }).then(
-  //     res => res.json()
-  //   ).then(newGoal => {
-  //     setGoals(prevGoals => [...prevGoals, newGoal]);
-  //     setShowAddGoalForm(false);
-  //   });
-  // };
 
   const handleGoalAdded = (newGoal) => {
     setGoals(prev => [...prev, newGoal]);
@@ -153,7 +138,7 @@ function App() {
   
   return (
     <div className="app-container">
-      {/* <NavBar /> */}
+      <NavBar />
       <GoalSidebar
         goals={goals}
         selectedGoalId={selectedGoal?.id}
@@ -175,6 +160,12 @@ function App() {
           onUpdateTask={handleUpdateTask}
           onDeleteTask={handleDeleteTask}
         />
+        {showAddTaskForm && (
+          <AddTaskForm
+            onSubmite={handleAddTask}
+            onCancel={() => setShowAddTaskForm(false)}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import AddTaskForm from "./AddTaskForm";
-import TaskTree from "./TaskTree";
+import TaskTree from "./depreciated/TaskTree";
 import "../css/GoalDetailView.css";
 
 function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) {
-    const [showAddInput, setShowAddInput] = useState(false);
+    const [showAddTask, setShowAddTask] = useState(false);
 
     const containerClass = `goal-detail-view ${!goal ? "empty" : ""}`;
 
