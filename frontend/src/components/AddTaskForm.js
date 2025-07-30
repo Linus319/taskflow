@@ -1,15 +1,17 @@
 import { useState } from "react";
 import "../css/AddTaskForm.css"
 
-function AddTaskForm({ goalId, onAdd }) {
+function AddTaskForm({ goalId, onSubmit, onCancel }) {
   const [title, setTitle] = useState("");
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
-
-    onAdd(null, title);
-    setTitle("");
+    console.log("form submitted with title:", title);
+    if (title.trim()) {
+      console.log("goalId in AddTaskForm:", goalId)
+      onSubmit({ title, goal_id: goalId });
+      setTitle("");
+    }
   };
 
   return (
@@ -20,7 +22,8 @@ function AddTaskForm({ goalId, onAdd }) {
         value={title}
         onChange={e => setTitle(e.target.value)}
       />
-      <button type="submit">Add Task</button>
+      <button type="submit">Add</button>
+      <button type="button" onClick={onCancel}>Cancel</button>
     </form>
   );
 }

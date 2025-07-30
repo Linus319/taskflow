@@ -2,3 +2,4 @@
 /frontend/build
 /.vscode
 /frontend/package-lock.json
+/backend/app.db

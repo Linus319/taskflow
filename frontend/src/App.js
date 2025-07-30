@@ -38,23 +38,6 @@ function App() {
     console.log("Selected goal updated:", selectedGoal);
   }, [selectedGoal]);
 
-  function nestTasks(flatTasks) {
-    const taskMap = {};
-    flatTasks.forEach(task => taskMap[task.id] = { ...task, subtasks: [] });
-
-    const rootTasks = [];
-
-    flatTasks.forEach(task => {
-      if (task.parent_id) {
-        taskMap[task.parent_id]?.subtasks.push(taskMap[task.id]);
-      } else {
-        rootTasks.push(taskMap[task.id]);
-      }
-    });
-
-    return rootTasks;
-  }
-
 
   const handleGoalAdded = (newGoal) => {
     setGoals(prev => [...prev, newGoal]);
@@ -94,8 +77,15 @@ function App() {
   };
 
   // task CRUD
-  const handleAddTask = (parentId = null, title) => {
-    if (!selectedGoal) return;
+  const handleAddTask = (title, parentId = null) => {
+    if (!selectedGoal) {
+      console.log("no goal selected when adding task")
+      return;
+    }
+
+    console.log("selectedGoal is:", selectedGoal);
+
+    console.log("sending task:", { title, parentId})
 
     fetch(`/api/goals/${selectedGoal.id}/tasks`, {
       method: 'POST',
@@ -142,7 +132,7 @@ function App() {
       <GoalSidebar
         goals={goals}
         selectedGoalId={selectedGoal?.id}
-        onSelect={(goal) => setSelectedGoalId(goal.id)}  // ✅ this updates selected goal        
+        onSelect={(goal) => setSelectedGoalId(goal.id)}        
         onAdd={handleAddGoalButtonClick}
         onDelete={handleDeleteGoal}
       />
@@ -162,7 +152,11 @@ function App() {
         />
         {showAddTaskForm && (
           <AddTaskForm
-            onSubmite={handleAddTask}
+            goalId={selectedGoal?.id}
+            onSubmit={(title) => {
+              console.log("calling handleAddTask from app with title:", title);
+              handleAddTask(title, null);
+            }}
             onCancel={() => setShowAddTaskForm(false)}
           />
         )}

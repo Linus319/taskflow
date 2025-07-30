@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS # allows frontend js to call backend during dev
+from flask_cors import CORS
 import requests
 import os
 from models import db, Goal, Task
@@ -12,9 +12,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'app.
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
-#initialize tables if they don't exist
 with app.app_context():
     db.create_all()
+
+@app.before_request
+def log_request_info():
+    print("REQUEST:", request.method, request.path)
 
 @app.route("/")
 def serve():
@@ -27,11 +30,8 @@ def serve_static_file(path):
     else:
         return send_from_directory(app.static_folder, "index.html")
 
-
-
-
 @app.route("/api/goals", methods=["GET", "POST"])
-def handle_goals():
+def list_or_create_goals():
     if request.method == "POST":
         data = request.get_json()
         goal_title = data.get("title")
@@ -44,7 +44,6 @@ def handle_goals():
 
         return jsonify(new_goal.to_dict()), 201
 
-    # get all goals
     goals = Goal.query.all()
     return jsonify([goal.to_dict() for goal in goals])
 
@@ -73,8 +72,6 @@ def update_goal(goal_id):
 
     return jsonify(goal.to_dict()), 200
 
-
-
 @app.route("/api/goals/<int:goal_id>/subtasks", methods=['POST'])
 def add_subtask(goal_id):
     data = request.get_json()
@@ -91,7 +88,7 @@ def add_subtask(goal_id):
     new_task = Task(
         title=title,
         goal_id = goal.id,
-        parent_id = parent_id  # can be none or reference another task
+        parent_id = parent_id  # none or reference another task
     )
 
     db.session.add(new_task)
@@ -114,15 +111,16 @@ def get_tasks_for_goal(goal_id):
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
 def add_task(goal_id):
     data = request.get_json()
+    print("received task creation:", data)
     title = data.get("title")
     parent_id = data.get("parent_id") # for standard tasks pass none
 
     if not title:
         return jsonify({'error': 'Missing task title'}), 400
     
-    # goal = Goal.query.get(goal_id)
-    # if not goal:
-    #     return jsonify({'error': "Goal not found"}), 404
+    goal = Goal.query.get(goal_id)
+    if not goal:
+        return jsonify({'error': "Goal not found"}), 404
     
     new_task = Task(title=title, goal_id=goal_id, parent_id=parent_id)
     db.session.add(new_task)
