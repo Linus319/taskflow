@@ -9,8 +9,7 @@ class Goal(db.Model):
     title = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=db.func.now())
 
-    # one to many: goal -> tasks (only top level)
-    tasks = db.relationship('Task', backref='goal', lazy=True, cascade="all, delete-orphan")
+    tasks = db.relationship('Task', back_populates='goal', lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
         return {
@@ -24,24 +23,15 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
-
-    # foreign key to link this task to its goal
     goal_id = db.Column(db.Integer, db.ForeignKey('goal.id'), nullable=False)
-
-    # self referencing foreign key to support nested subtasks
     parent_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=True)
 
-    # relationships
-    subtasks = db.relationship(
-        'Task',
-        backref=db.backref('parent', remote_side=[id]),
-        lazy=True,
-        cascade="all, delete-orphan"
-    )
-
     created_at = db.Column(db.DateTime, default=db.func.now())
-    order_idx = db.Column(db.Integer)
+    order_idx = db.Column(db.Integer) # what does this do
     status = db.Column(db.String(20), default='active') # active, done, archived
+
+    goal = db.relationship("Goal", back_populates="tasks")
+    parent = db.relationship('Task', remote_side=[id], backref='subtasks')
 
     def to_dict(self, recursive=True):
         base = {

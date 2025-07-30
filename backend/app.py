@@ -120,9 +120,9 @@ def add_task(goal_id):
     if not title:
         return jsonify({'error': 'Missing task title'}), 400
     
-    goal = Goal.query.get(goal_id)
-    if not goal:
-        return jsonify({'error': "Goal not found"}), 404
+    # goal = Goal.query.get(goal_id)
+    # if not goal:
+    #     return jsonify({'error': "Goal not found"}), 404
     
     new_task = Task(title=title, goal_id=goal_id, parent_id=parent_id)
     db.session.add(new_task)
