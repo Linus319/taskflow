@@ -8,11 +8,9 @@ import GoalDetailView from './components/GoalDetailView';
 
 function App() {
   const [goals, setGoals] = useState([]);
-  // const [selectedGoal, setSelectedGoal] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [showAddGoalForm, setShowAddGoalForm] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
-
   const [selectedGoalId, setSelectedGoalId] = useState(null);
   const selectedGoal = useMemo(() => goals.find(g => g.id === selectedGoalId), [goals, selectedGoalId]);
 
@@ -99,6 +97,9 @@ function App() {
   };
 
   const handleUpdateTask = (taskId, updatedFields) => {
+    console.log('sharting update task');
+    console.log('updated fields:', updatedFields);
+
     fetch(`/api/tasks/${taskId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -113,6 +114,13 @@ function App() {
   };
 
   const handleDeleteTask = (taskId) => {
+    if (!taskId) {
+      console.log("no task id in handleDeleteTask");
+      return;
+    }
+
+    console.log("starting delete task with task id:", taskId);
+
     fetch(`/api/tasks/${taskId}`, {
       method: "DELETE",
     })

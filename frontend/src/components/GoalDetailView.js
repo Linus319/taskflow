@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import AddTaskForm from "./AddTaskForm";
-import TaskTree from "./depreciated/TaskTree";
+import TaskTree from "./TaskTree";
 import "../css/GoalDetailView.css";
 
 function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) {
+    
+    console.log("GoalDetailView props:", { onDeleteTask });
+
+
     const [showAddTask, setShowAddTask] = useState(false);
 
     const containerClass = `goal-detail-view ${!goal ? "empty" : ""}`;
@@ -20,21 +24,17 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) 
         setShowAddTask(false);
     }
     
-    const handleDeleteTask = (taskId) => {
-        fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE',
-        })
-        .then((res) => {
-            if (!res.ok) throw new Error("Failed to delete task");
-            onDeleteTask(taskId);
-        })
-        .catch((err) => {
-            console.error("Delete error:", err);
-            alert("Could not delete task.");
-        });
-    };
+    // const handleDeleteTask = (taskId) => {
+    //     console.log("handle delete task in goalDetailView");
+    //     onDeleteTask(taskId);
+    // };
+
+    // const handleUpdateTask = (taskId) => {
+        
+    // }
 
     const handleCancelTask = (taskId) => {
+        // should this really delete from db? i don't think the task would have been created yet
         fetch(`/api/tasks/${taskId}`, {
             method: 'DELETE',
         })
@@ -58,8 +58,8 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) 
                     <TaskTree
                         tasks={tasks.filter(t => t.goal_id === goal.id)}
                         onAddTask={handleAddTask}
-                        // onUpdateTask={handleUpdateTask}
-                        onDeleteTask={handleDeleteTask}
+                        onUpdateTask={onUpdateTask}
+                        onDeleteTask={onDeleteTask}
                     />
                     <button onClick={handleAddTaskClick}>Add Task</button>
                     {showAddTask && (

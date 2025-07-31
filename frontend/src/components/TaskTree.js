@@ -1,5 +1,4 @@
-import React from 'react';
-
+import { useState } from "react";
 
 function buildTaskTree(tasks) {
   const taskMap = {};
@@ -25,7 +24,9 @@ function buildTaskTree(tasks) {
 }
 
 
+
 function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask }) {
+
   const taskTree = buildTaskTree(tasks);
 
   return (
@@ -44,12 +45,36 @@ function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask }) {
 }
 
 function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [newTitle, setNewTitle] = useState(task.title);
+
+  if (isEditing) {
+    return (
+      <div className="task-node" style={{ marginLeft: task.parent_id ? 20 : 0 }}>
+        <input 
+          type="text" 
+          value={newTitle} 
+          onChange={e => setNewTitle(e.target.value)} 
+        />
+        <button
+          onClick={() => {
+            onUpdateTask(task.id, { title: newTitle });
+            setIsEditing(false);
+          }}
+        >
+          Save
+        </button>
+        <button onClick={() => setIsEditing(false)}>Cancel</button>
+      </div>
+    );
+  }
+
   return (
     <div className="task-node" style={{ marginLeft: task.parent_id ? 20 : 0 }}>
       <div className="task-row">
         <span>{task.title}</span>
         <button onClick={() => onAddTask(task.id, prompt("New subtask title:"))}>➕</button>
-        <button onClick={() => onUpdateTask(task.id)}>✏️</button>
+        <button onClick={() => setIsEditing(true)}>✏️</button>
         <button onClick={() => onDeleteTask(task.id)}>🗑️</button>
       </div>
       {task.subtasks && task.subtasks.length > 0 && (
