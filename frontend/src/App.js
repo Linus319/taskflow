@@ -61,6 +61,8 @@ function App() {
   };
 
   const handleUpdateGoal = (goalId, updatedFields) => {
+    console.log("starting handleUpdateGoal in App.js");
+
     fetch(`/api/goals/${goalId}`, {
       method: 'PUT',
       headers: { "Content-Type": "application/json" },
@@ -77,13 +79,8 @@ function App() {
   // task CRUD
   const handleAddTask = (title, parentId = null) => {
     if (!selectedGoal) {
-      console.log("no goal selected when adding task")
       return;
     }
-
-    console.log("selectedGoal is:", selectedGoal);
-
-    console.log("sending task:", { title, parentId})
 
     fetch(`/api/goals/${selectedGoal.id}/tasks`, {
       method: 'POST',
@@ -143,6 +140,7 @@ function App() {
         onSelect={(goal) => setSelectedGoalId(goal.id)}        
         onAdd={handleAddGoalButtonClick}
         onDelete={handleDeleteGoal}
+        onUpdate={handleUpdateGoal}
       />
       {showAddGoalForm && (
         <AddGoalForm

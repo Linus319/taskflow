@@ -1,7 +1,7 @@
 import "../css/Sidebar.css";
 import GoalItem from "./GoalItem";
 
-function GoalSidebar({ goals, selectedGoalId, onSelect, onAdd, onDelete }) {
+function GoalSidebar({ goals, selectedGoalId, onSelect, onAdd, onDelete, onUpdate }) {
     console.log("selectedGoal", selectedGoalId);
 
     return (
@@ -18,6 +18,7 @@ function GoalSidebar({ goals, selectedGoalId, onSelect, onAdd, onDelete }) {
                         isSelected={goal.id === selectedGoalId}
                         onSelect={onSelect}
                         onDelete={onDelete}
+                        onUpdate={onUpdate}
                     />
                 ))}
             </ul>

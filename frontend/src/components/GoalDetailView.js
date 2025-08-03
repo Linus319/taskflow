@@ -15,37 +15,17 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) 
     const handleAddTaskClick = (e) => {
         e.preventDefault();
         setShowAddTask(true);
-    }
+    };
 
     const handleAddTask = (newTask) => {
         if (newTask?.title) {
             onAddTask(newTask.title, null);
         }
         setShowAddTask(false);
-    }
-    
-    // const handleDeleteTask = (taskId) => {
-    //     console.log("handle delete task in goalDetailView");
-    //     onDeleteTask(taskId);
-    // };
-
-    // const handleUpdateTask = (taskId) => {
-        
-    // }
+    };
 
     const handleCancelTask = (taskId) => {
-        // should this really delete from db? i don't think the task would have been created yet
-        fetch(`/api/tasks/${taskId}`, {
-            method: 'DELETE',
-        })
-        .then((res) => {
-            if (!res.ok) throw new Error("Failed to delete task");
-            onDeleteTask(taskId);
-        })
-        .catch((err) => {
-            console.error("Delete error:", err);
-            alert("Could not delete task.");
-        }); 
+        setShowAddTask(false);
     };
 
     return (
