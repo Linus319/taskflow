@@ -73,7 +73,12 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask }) {
     <div className="task-node" style={{ marginLeft: task.parent_id ? 20 : 0 }}>
       <div className="task-row">
         <span>{task.title}</span>
-        <button onClick={() => onAddTask(task.id, prompt("New subtask title:"))}>➕</button>
+        <button onClick={() => {
+          const title = prompt("New subtask title:");
+          if (title?.trim()) {
+            onAddTask(title, task.id);
+          }
+        }}>➕</button>
         <button onClick={() => setIsEditing(true)}>✏️</button>
         <button onClick={() => onDeleteTask(task.id)}>🗑️</button>
       </div>

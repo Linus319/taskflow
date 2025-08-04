@@ -17,14 +17,17 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) 
         setShowAddTask(true);
     };
 
-    const handleAddTask = (newTask) => {
-        if (newTask?.title) {
-            onAddTask(newTask.title, null);
+    const handleAddTask = (title, parent_id) => {
+        console.log("handleAddTask in GoalDetailView");
+
+        if (title) {
+            console.log(`calling onAddTask with title: ${title}, and parent_id: ${parent_id}`)
+            onAddTask(title, parent_id);
         }
         setShowAddTask(false);
     };
 
-    const handleCancelTask = (taskId) => {
+    const handleCancelTask = () => {
         setShowAddTask(false);
     };
 
