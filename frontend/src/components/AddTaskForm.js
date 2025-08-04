@@ -9,7 +9,7 @@ function AddTaskForm({ goalId, onSubmit, onCancel }) {
     console.log("form submitted with title:", title);
     if (title.trim()) {
       console.log("goalId in AddTaskForm:", goalId)
-      onSubmit({ title, goal_id: goalId });
+      onSubmit(title);
       setTitle("");
     }
   };

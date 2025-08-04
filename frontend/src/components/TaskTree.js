@@ -20,6 +20,13 @@ function buildTaskTree(tasks) {
     }
   });
 
+  const sortByOrder = (taskList) => {
+    taskList.sort((a, b) => (a.order_idx ?? 0) - (b.order_idx ?? 0));
+    taskList.forEach(t => sortByOrder(t.subtasks));
+  };
+
+  sortByOrder(roots);
+
   return roots;
 }
 

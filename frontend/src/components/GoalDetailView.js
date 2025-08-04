@@ -17,7 +17,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask }) 
         setShowAddTask(true);
     };
 
-    const handleAddTask = (title, parent_id) => {
+    const handleAddTask = (title, parent_id, goal_id) => {
         console.log("handleAddTask in GoalDetailView");
 
         if (title) {

@@ -49,7 +49,7 @@ function GoalItem({ goal, isSelected, onSelect, onDelete, onUpdate }) {
                 <button
                     className="delete-button"
                     onClick={(e) => {
-                        e.stopPropogation();
+                        e.stopPropagation();
                         onDelete(goal.id);
                     }}
                     title="Delete goal"

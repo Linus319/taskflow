@@ -111,18 +111,26 @@ def get_tasks_for_goal(goal_id):
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
 def add_task(goal_id):
     data = request.get_json()
-    print("received task creation:", data)
     title = data.get("title")
-    parent_id = data.get("parent_id") # for standard tasks pass none
+    parent_id = data.get("parent_id")
 
     if not title:
         return jsonify({'error': 'Missing task title'}), 400
+    
+    siblings = Task.query.filter_by(goal_id=goal_id, parent_id=parent_id).all()
+    max_order = max([s.order_idx for s in siblings if s.order_idx is not None], default=-1)
+    new_order_idx = max_order + 1
     
     goal = Goal.query.get(goal_id)
     if not goal:
         return jsonify({'error': "Goal not found"}), 404
     
-    new_task = Task(title=title, goal_id=goal_id, parent_id=parent_id)
+    new_task = Task(
+        title=title,
+        goal_id=goal_id,
+        parent_id=parent_id,
+        order_idx = new_order_idx
+    )
     db.session.add(new_task)
     db.session.commit()
     return jsonify(new_task.to_dict()), 201
