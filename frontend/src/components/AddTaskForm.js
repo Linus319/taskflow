@@ -3,14 +3,15 @@ import "../css/AddTaskForm.css"
 
 function AddTaskForm({ goalId, onSubmit, onCancel }) {
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("form submitted with title:", title);
     if (title.trim()) {
-      console.log("goalId in AddTaskForm:", goalId)
-      onSubmit(title);
+      console.log("Submitting task:", { title, description });
+      onSubmit({ title, description });
       setTitle("");
+      setDescription("");
     }
   };
 
@@ -18,9 +19,14 @@ function AddTaskForm({ goalId, onSubmit, onCancel }) {
     <form className="add-task-form" onSubmit={handleSubmit}>
       <input
         type="text"
-        placeholder="Add new task..."
+        placeholder="Task title..."
         value={title}
         onChange={e => setTitle(e.target.value)}
+      />
+      <textarea 
+        placeholder="Description (optional)"
+        value = {description}
+        onChange={e => setDescription(e.target.value)}
       />
       <button type="submit">Add</button>
       <button type="button" onClick={onCancel}>Cancel</button>

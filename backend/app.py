@@ -3,6 +3,8 @@ from flask_cors import CORS
 import requests
 import os
 from models import db, Goal, Task
+import json
+from flask_migrate import Migrate
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -11,6 +13,7 @@ CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
+migrate = Migrate(app, db)
 
 with app.app_context():
     db.create_all()
@@ -37,13 +40,10 @@ def list_or_create_goals():
         goal_title = data.get("title")
         if not goal_title:
             return jsonify({"error": "Missing goal title"}), 400
-        
         new_goal = Goal(title=goal_title)
         db.session.add(new_goal)
         db.session.commit()
-
         return jsonify(new_goal.to_dict()), 201
-
     goals = Goal.query.all()
     return jsonify([goal.to_dict() for goal in goals])
 
@@ -111,8 +111,12 @@ def get_tasks_for_goal(goal_id):
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
 def add_task(goal_id):
     data = request.get_json()
+    print(data)
     title = data.get("title")
     parent_id = data.get("parent_id")
+    description = data.get("description", "")
+
+    print("Creating task:", title, "| Description:", description)
 
     if not title:
         return jsonify({'error': 'Missing task title'}), 400
@@ -127,6 +131,7 @@ def add_task(goal_id):
     
     new_task = Task(
         title=title,
+        description=description,
         goal_id=goal_id,
         parent_id=parent_id,
         order_idx = new_order_idx
@@ -166,26 +171,56 @@ def delete_task(task_id):
     return jsonify({"message": "Task deleted"}), 200
 
 
-@app.route("/api/ollama", methods=['POST'])
-def ollama_complete():
-    data = request.get_json()
-    prompt = data.get("prompt")
-    model = data.get("model", "llama3") # default model
 
-    if not prompt:
-        return jsonify({"error": "Missing prompt"}), 400
+@app.route(f"/api/goals/<int:goal_id>/generate-plan", methods=['POST'])
+def generate_plan(goal_id):
+    goal = Goal.query.get_or_404(goal_id)
+
+    prompt = f"""
+    You are an expert project planner. Given the following goal, generate a task plan as structured JSON.
+
+    Goal: "{goal.title}"
+
+    Each task should include:
+    - title
+    - description
+
+    Output format:
+    [
+      {{
+        "title": "First task",
+        "description": "This is a brief description."
+      }},
+      ...
+    ]
+    """
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "llama3",
+            "prompt": prompt.strip(),
+            "stream": False
+        }
+    )
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to generate tasks"}), 500
     
-    # call local ollama instance
+    data = response.json()
+    raw_output = data.get("response", "")
+    before, sep, after = raw_output.partition("```")
+    cleaned = after.strip()
+    before, sep, after = cleaned.partition("```")
+    cleaned = before.strip()
+
     try:
-        response = requests.post(
-            "http://localhost:11434/api/generate",
-            json={"model": model, "prompt": prompt}
-        )
-        response.raise_for_status()
-        result = response.json()
-        return jsonify(result)
-    except requests.exceptions.RequestException as e:
-        return jsonify({"error": str(e)}), 500
+        task_plan = json.loads(cleaned)
+    except Exception as e:
+        return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
+    
+    return jsonify(task_plan), 200
+
+
 
 
 if __name__ == "__main__":

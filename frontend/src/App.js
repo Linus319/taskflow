@@ -33,8 +33,14 @@ function App() {
   }, [selectedGoal]);
 
   useEffect(() => {
-    console.log("Selected goal updated:", selectedGoal);
   }, [selectedGoal]);
+
+  const refreshTasks = () => {
+    if (!selectedGoal) return;
+    fetch(`/api/goals/${selectedGoal.id}/tasks`)
+      .then(res => res.json())
+      .then(setTasks);
+  };
 
 
   const handleGoalAdded = (newGoal) => {
@@ -61,8 +67,6 @@ function App() {
   };
 
   const handleUpdateGoal = (goalId, updatedFields) => {
-    console.log("starting handleUpdateGoal in App.js");
-
     fetch(`/api/goals/${goalId}`, {
       method: 'PUT',
       headers: { "Content-Type": "application/json" },
@@ -77,7 +81,7 @@ function App() {
   };
 
   // task CRUD
-  const handleAddTask = (title, parentId = null) => {
+  const handleAddTask = ({ title, parentId = null, description = "" }) => {
     if (!selectedGoal) {
       return;
     }
@@ -85,7 +89,7 @@ function App() {
     fetch(`/api/goals/${selectedGoal.id}/tasks`, {
       method: 'POST',
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, parent_id: parentId }),
+      body: JSON.stringify({ title, parent_id: parentId, description }),
     }).then(
       res => res.json()
     ).then(newTask => {
@@ -94,9 +98,6 @@ function App() {
   };
 
   const handleUpdateTask = (taskId, updatedFields) => {
-    console.log('sharting update task');
-    console.log('updated fields:', updatedFields);
-
     fetch(`/api/tasks/${taskId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -112,12 +113,8 @@ function App() {
 
   const handleDeleteTask = (taskId) => {
     if (!taskId) {
-      console.log("no task id in handleDeleteTask");
       return;
     }
-
-    console.log("starting delete task with task id:", taskId);
-
     fetch(`/api/tasks/${taskId}`, {
       method: "DELETE",
     })
@@ -155,13 +152,13 @@ function App() {
           onAddTask={handleAddTask}
           onUpdateTask={handleUpdateTask}
           onDeleteTask={handleDeleteTask}
+          refreshTasks={refreshTasks}
         />
         {showAddTaskForm && (
           <AddTaskForm
             goalId={selectedGoal?.id}
-            onSubmit={(title) => {
-              console.log("calling handleAddTask from app with title:", title);
-              handleAddTask(title, null);
+            onSubmit={(title, description) => {
+              handleAddTask({ title, parentId: null, description });
             }}
             onCancel={() => setShowAddTaskForm(false)}
           />

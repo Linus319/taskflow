@@ -79,7 +79,12 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask }) {
   return (
     <div className="task-node" style={{ marginLeft: task.parent_id ? 20 : 0 }}>
       <div className="task-row">
-        <span>{task.title}</span>
+        <div style={{display: "flex", flexDirection: "column"}}>
+          <span>{task.title}</span>
+          {task.description && (
+            <span className="task-description" style={{fontSize: "0.9em", color: "#888"}}>{task.description}</span>
+          )}
+        </div>
         <button onClick={() => {
           const title = prompt("New subtask title:");
           if (title?.trim()) {

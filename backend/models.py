@@ -23,6 +23,7 @@ class Task(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     goal_id = db.Column(db.Integer, db.ForeignKey('goal.id'), nullable=False)
     parent_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=True)
 
@@ -37,6 +38,7 @@ class Task(db.Model):
         base = {
             "id": self.id,
             "title": self.title,
+            "description": self.description,
             "goal_id": self.goal_id,
             "parent_id": self.parent_id,
             "created_at": self.created_at.isoformat(),
