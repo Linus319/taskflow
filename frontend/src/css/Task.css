@@ -2,8 +2,23 @@
   margin: 4px 0;
 }
 
+.task-node.nested-task {
+  margin-left: 20px;
+}
+
 .task-row {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.task-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.task-description {
+  font-size: 0.9em;
+  color: #888;
 }

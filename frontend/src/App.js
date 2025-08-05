@@ -80,11 +80,8 @@ function App() {
     });
   };
 
-  // task CRUD
   const handleAddTask = ({ title, parentId = null, description = "" }) => {
-    if (!selectedGoal) {
-      return;
-    }
+    if (!selectedGoal) return;
 
     fetch(`/api/goals/${selectedGoal.id}/tasks`, {
       method: 'POST',
@@ -93,7 +90,7 @@ function App() {
     }).then(
       res => res.json()
     ).then(newTask => {
-      setTasks(prev => [...prev, newTask]);
+      refreshTasks();
     });
   };
 
@@ -105,9 +102,7 @@ function App() {
     })
     .then(res => res.json())
     .then(updatedTask => {
-      setTasks(prev =>
-        prev.map(task => (task.id === updatedTask.id ? updatedTask : task))
-      );
+      refreshTasks();
     });
   };
 
@@ -120,7 +115,7 @@ function App() {
     })
     .then(res => {
       if (!res.ok) throw new Error("Failed to delete task");
-      setTasks(prev => prev.filter(task => task.id !== taskId));
+      refreshTasks();
     })
     .catch(err => console.error("Delete task failed:", err));
   };

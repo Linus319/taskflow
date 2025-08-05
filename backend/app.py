@@ -5,6 +5,7 @@ import os
 from models import db, Goal, Task
 import json
 from flask_migrate import Migrate
+from sqlalchemy.orm import joinedload
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -103,8 +104,7 @@ def get_tasks_for_goal(goal_id):
     if not goal:
         return jsonify({"error": "Goal not found"}), 404
     
-    # get top level tasks for goal
-    top_tasks = Task.query.filter_by(goal_id=goal_id, parent_id=None).all()
+    top_tasks = Task.query.options(joinedload(Task.subtasks)).filter_by(goal_id=goal_id, parent_id=None).all()
     return jsonify([task.to_dict(recursive=True) for task in top_tasks])
 
 
@@ -158,6 +158,7 @@ def update_task(task_id):
         return jsonify({"error": "No JSON data received"}), 400
     
     task.title = data.get("title", task.title)
+    task.description = data.get("description", task.description)
     db.session.commit()
     return jsonify(task.to_dict()), 200
 
@@ -173,7 +174,7 @@ def delete_task(task_id):
 
 
 @app.route(f"/api/goals/<int:goal_id>/generate-plan", methods=['POST'])
-def generate_plan(goal_id):
+def generate_plan_for_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
 
     prompt = f"""
@@ -220,6 +221,68 @@ def generate_plan(goal_id):
     
     return jsonify(task_plan), 200
 
+
+@app.route(f"/api/tasks/<int:task_id>/generate-plan", methods=['POST'])
+def generate_plan_for_task(task_id):
+    task = Task.query.get_or_404(task_id)
+
+    #FIXME change this prompt to include the goal and eventually the whole task tree
+    prompt = f"""
+    You are an expert project planner. Given the following task, generate a detailed plan of subtasks as structured JSON.
+
+    Task: "{task.title}"
+    Description: "{task.description or ''}"
+
+    Each subtask should include:
+    - title
+    - description
+
+    Output format:
+    [
+      {{
+        "title": "First subtask",
+        "description": "Brief description"
+      }},
+      ...
+    ]
+    """
+
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "llama3",
+            "prompt": prompt.strip(),
+            "stream": False
+        }
+    )
+
+    if response.status_code != 200:
+        return jsonify({"error": "Failed to generate subtasks"}), 500
+
+    data = response.json()
+    raw_output = data.get("response", "")
+    before, sep, after = raw_output.partition("```")
+    cleaned = after.strip()
+    before, sep, after = cleaned.partition("```")
+    cleaned = before.strip()
+
+    try:
+        subtask_plan = json.loads(cleaned)
+    except Exception as e:
+        return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
+
+    # Optionally save subtasks immediately
+    for sub in subtask_plan:
+        new_subtask = Task(
+            title=sub["title"],
+            description=sub.get("description", ""),
+            goal_id=task.goal_id,
+            parent_id=task.id
+        )
+        db.session.add(new_subtask)
+    db.session.commit()
+
+    return jsonify(subtask_plan), 200
 
 
 
