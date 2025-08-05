@@ -1,9 +1,25 @@
 .task-node {
-  margin: 4px 0;
+  background: #f9f9f9;
+  border-left: 4px solid #1976d2;
+  padding: 8px 12px;
+  margin: 6px 0;
+  border-radius: 6px;
+  transition: background 0.2s, border-color 0.2s;
 }
 
-.task-node.nested-task {
-  margin-left: 20px;
+.task-node:hover {
+  background: #f1f7ff;
+  border-color: #1565c0;
+}
+
+.task-node.done {
+  background: #e8f5e9;
+  border-left-color: #43a047;
+}
+
+.task-node.done .task-content span:first-child {
+  text-decoration: line-through;
+  color: #777;
 }
 
 .task-row {
@@ -21,4 +37,36 @@
 .task-description {
   font-size: 0.9em;
   color: #888;
+}
+
+.subtasks {
+  margin-top: 6px;
+  margin-left: 5px;
+  padding-left: 5px;
+}
+
+.custom-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #888;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-checkbox:hover {
+  border-color: #555;
+}
+
+.custom-checkbox.checked {
+  background-color: #4caf50;
+  border-color: #4caf50;
+}
+
+.custom-checkbox.checked .checkmark {
+  color: white;
+  font-size: 14px;
 }

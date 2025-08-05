@@ -11,6 +11,7 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path='/')
 CORS(app)
+CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
@@ -102,7 +103,7 @@ def delete_goal(goal_id):
     db.session.commit()
     return jsonify({"message": "Goal deleted"}), 200
 
-@app.route("/api/goals/<int:goal_id>/", methods=['PUT'])
+@app.route("/api/goals/<int:goal_id>", methods=['PUT'])
 @login_required
 def update_goal(goal_id):
     goal = Goal.query.get(goal_id)
@@ -198,12 +199,15 @@ def update_task(task_id):
         return jsonify({"error": "Task not found"}), 404
     
     data = request.get_json()
-    
     if data is None:
         return jsonify({"error": "No JSON data received"}), 400
     
     task.title = data.get("title", task.title)
     task.description = data.get("description", task.description)
+
+    if "status" in data:
+        task.status = data["status"]
+
     db.session.commit()
     return jsonify(task.to_dict()), 200
 
@@ -260,8 +264,8 @@ def generate_plan_for_goal(goal_id):
     cleaned = sep + after.strip()
     before, sep, after = cleaned.partition("]")
     cleaned = before.strip() + sep
-    print("raw:\n", raw_output)
-    print("cleaned:\n", cleaned)
+    # print("raw:\n", raw_output)
+    # print("cleaned:\n", cleaned)
 
     try:
         task_plan = json.loads(cleaned)

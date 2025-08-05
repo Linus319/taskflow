@@ -1,4 +1,3 @@
-// src/components/MainAppUI.jsx
 import { useState, useEffect, useMemo } from "react";
 import AddTaskForm from "./AddTaskForm";
 import GoalSidebar from "./GoalSidebar";
@@ -63,6 +62,17 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
   };
 
   const handleUpdateGoal = (goalId, updatedFields) => {
+    // // debugging
+    // fetch(`/api/goals/${goalId}`, {
+    //   method: "PUT",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify(updatedFields),
+    // })
+    //   .then(r => r.json())
+    //   .then(console.log)
+    //   .catch(console.error);
+
+
     fetchWithAuth(`/api/goals/${goalId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -115,8 +125,6 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
         selectedGoalId={selectedGoal?.id}
         onSelect={(goal) => setSelectedGoalId(goal.id)}
         onAdd={handleAddGoalButtonClick}
-        onDelete={handleDeleteGoal}
-        onUpdate={handleUpdateGoal}
       />
       {showAddGoalForm && (
         <AddGoalForm
@@ -132,6 +140,8 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
           onUpdateTask={handleUpdateTask}
           onDeleteTask={handleDeleteTask}
           refreshTasks={refreshTasks}
+          onDeleteGoal={handleDeleteGoal}
+          onUpdateGoal={handleUpdateGoal}
         />
         {showAddTaskForm && (
           <AddTaskForm

@@ -8,7 +8,6 @@ function AddTaskForm({ goalId, onSubmit, onCancel }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (title.trim()) {
-      console.log("Submitting task:", { title, description });
       onSubmit({ title, description });
       setTitle("");
       setDescription("");
