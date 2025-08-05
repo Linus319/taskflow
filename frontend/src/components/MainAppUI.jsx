@@ -21,7 +21,7 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
       .then((res) => res.json())
       .then(setGoals)
       .catch(console.error);
-  }, []);
+  }, [fetchWithAuth]);
 
   useEffect(() => {
     if (selectedGoal) {
@@ -30,7 +30,7 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
         .then(setTasks)
         .catch(console.error);
     }
-  }, [selectedGoal]);
+  }, [selectedGoal, fetchWithAuth]);
 
   const refreshTasks = () => {
     if (!selectedGoal) return;
