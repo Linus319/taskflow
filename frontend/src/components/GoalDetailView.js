@@ -5,7 +5,14 @@ import "../css/GoalDetailView.css";
 
 function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks }) {
     const [showAddTask, setShowAddTask] = useState(false);
-    const containerClass = `goal-detail-view ${!goal ? "empty" : ""}`;
+    
+    if (!goal) {
+        return <div className="goal-detail-view empty">Please select a goal from the sidebar.</div>;
+    }
+
+    const goalTasks = tasks.filter(t => t.goal_id === goal.id);
+    const hasTopLevelTasks = goalTasks.some(t => !t.parent_id);
+    // const containerClass = `goal-detail-view ${!goal ? "empty" : ""}`;
 
     const handleAddTaskClick = (e) => {
         e.preventDefault();
@@ -13,7 +20,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     };
 
     const handleAddTask = ({ title, parentId = null, description }) => {
-        console.log("handleAddTask in GoalDetailView, parent_id:", parentId);
+        // console.log("handleAddTask in GoalDetailView, parent_id:", parentId);
 
         if (title) {
             onAddTask({ title, parentId: parentId, description });
@@ -33,30 +40,8 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
             });
 
             if (!res.ok) throw new Error("Failed to generate plan");
-
-            const plan = await res.json();
-            for (const task of plan) {
-                const newTask = {
-                    title: task.title,
-                    description: task.description || "",
-                    parent_id: task.parent_id,
-                };
-
-                const taskRes = await fetch(`/api/goals/${goal.id}/tasks`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(newTask),
-                });
-
-                if (!taskRes.ok) {
-                    console.error("Failed to save task:", newTask);
-                    continue;
-                }
-
-                // const savedTask = await taskRes.json();
-                // onAddTask(savedTask.title, savedTask.parent_id);
-
-            }
+            
+            // await res.json();
             
             refreshTasks();
             
@@ -67,25 +52,21 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     }
 
     return (
-        <div className={containerClass}>
-            {!goal ? (
-                <div>Please select a goal from the sidebar.</div>
-            ) : (
-                <>
-                    <h2>{goal.title}</h2>
-                    <TaskTree
-                        tasks={tasks.filter(t => t.goal_id === goal.id)}
-                        onAddTask={handleAddTask}
-                        onUpdateTask={onUpdateTask}
-                        onDeleteTask={onDeleteTask}
-                        refreshTasks={refreshTasks}
-                    />
-                    <button onClick={handleAddTaskClick}>Add Task</button>
-                    {showAddTask && (
-                        <AddTaskForm goalId={goal.id} onSubmit={handleAddTask} onCancel={handleCancelTask}/>
-                    )}
-                    <button onClick={handleGeneratePlan}>Generate Plan</button>
-                </>
+        <div className={"goal-detail-view"}>
+            <h2>{goal.title}</h2>
+            <TaskTree
+                tasks={goalTasks}
+                onAddTask={handleAddTask}
+                onUpdateTask={onUpdateTask}
+                onDeleteTask={onDeleteTask}
+                refreshTasks={refreshTasks}
+            />
+            <button onClick={handleAddTaskClick}>Add Task</button>
+            {showAddTask && (
+                <AddTaskForm goalId={goal.id} onSubmit={handleAddTask} onCancel={handleCancelTask}/>
+            )}
+            {!hasTopLevelTasks && (
+                <button onClick={handleGeneratePlan}>Generate Plan</button>
             )}
         </div>
     );

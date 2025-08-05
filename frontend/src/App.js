@@ -59,6 +59,7 @@ function App() {
       if (!res.ok) throw new Error("Failed to delete goal");
       return res.json();
     }).then(() => {
+      // localStorage.removeItem(`hideGoalGeneratePlan_${goalId}`);
       setGoals(prevGoals => prevGoals.filter(g => g.id !== goalId));
       if (selectedGoal?.id === goalId) setSelectedGoalId(null);
     }).catch((err) => {
@@ -115,6 +116,7 @@ function App() {
     })
     .then(res => {
       if (!res.ok) throw new Error("Failed to delete task");
+      // localStorage.removeItem(`hideTaskGeneratePlan_${taskId}`);
       refreshTasks();
     })
     .catch(err => console.error("Delete task failed:", err));

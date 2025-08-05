@@ -8,11 +8,7 @@ function buildTaskTree(tasks) {
 
   // Index tasks by id
   tasks.forEach(task => {
-    // task.subtasks = [];
-    taskMap[task.id] = {
-      ...task,
-      subtasks: task.subtasks ?? []
-    };
+    taskMap[task.id] = {...task, subtasks: []};
   });
 
   // Build tree
@@ -21,7 +17,7 @@ function buildTaskTree(tasks) {
       const parent = taskMap[task.parent_id];
       if (parent) parent.subtasks.push(taskMap[task.id]);
     } else {
-      roots.push(task);
+      roots.push(taskMap[task.id]);
     }
   });
 
@@ -73,9 +69,8 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks })
       });
 
       if (!res.ok) throw new Error("Failed to generate plan");
-
-      await res.json();
       refreshTasks();
+
     } catch (err) {
       console.error(err);
       alert("Could not generate plan for this task");
@@ -117,8 +112,10 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks })
             <span className="task-description">{task.description}</span>
           )}
         </div>
-        <button title="Add task" onClick={() => setShowAddSubtaskForm(true)}>➕</button>
-        <button title="Generate plan" onClick={() => handleGeneratePlan(task.id)}>🪄</button>
+        <button title="Add subtask" onClick={() => setShowAddSubtaskForm(true)}>➕</button>
+        {task.subtasks?.length === 0 && (
+          <button title="Generate plan" onClick={() => handleGeneratePlan(task.id)}>🪄</button>
+        )}
         <button title="Edit task" onClick={() => setIsEditing(true)}>✏️</button>
         <button title="Delete task" onClick={() => onDeleteTask(task.id)}>🗑️</button>
       </div>
@@ -142,6 +139,7 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks })
               onAddTask={onAddTask}
               onUpdateTask={onUpdateTask}
               onDeleteTask={onDeleteTask}
+              refreshTasks={refreshTasks}
             />
           ))}
         </div>

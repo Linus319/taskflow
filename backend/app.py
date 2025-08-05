@@ -89,7 +89,7 @@ def add_subtask(goal_id):
     new_task = Task(
         title=title,
         goal_id = goal.id,
-        parent_id = parent_id  # none or reference another task
+        parent_id = parent_id
     )
 
     db.session.add(new_task)
@@ -104,8 +104,9 @@ def get_tasks_for_goal(goal_id):
     if not goal:
         return jsonify({"error": "Goal not found"}), 404
     
-    top_tasks = Task.query.options(joinedload(Task.subtasks)).filter_by(goal_id=goal_id, parent_id=None).all()
-    return jsonify([task.to_dict(recursive=True) for task in top_tasks])
+    all_tasks = Task.query.filter_by(goal_id=goal_id).all()
+
+    return jsonify([task.to_dict(recursive=True) for task in all_tasks])
 
 
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
@@ -146,14 +147,8 @@ def update_task(task_id):
     if not task:
         return jsonify({"error": "Task not found"}), 404
     
-    # Debug the request
-    print(f"Content-Type: {request.content_type}")
-    print(f"Raw data: {request.data}")
-    print(f"get_json(): {request.get_json()}")
-    
     data = request.get_json()
     
-    # Add this safety check
     if data is None:
         return jsonify({"error": "No JSON data received"}), 400
     
@@ -209,15 +204,31 @@ def generate_plan_for_goal(goal_id):
     
     data = response.json()
     raw_output = data.get("response", "")
-    before, sep, after = raw_output.partition("```")
-    cleaned = after.strip()
-    before, sep, after = cleaned.partition("```")
-    cleaned = before.strip()
+    before, sep, after = raw_output.partition("[")
+    cleaned = sep + after.strip()
+    before, sep, after = cleaned.partition("]")
+    cleaned = before.strip() + sep
+    print("raw:\n", raw_output)
+    print("cleaned:\n", cleaned)
 
     try:
         task_plan = json.loads(cleaned)
     except Exception as e:
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
+    
+    order_idx = 0
+    for t in task_plan:
+        new_task = Task(
+            title=t["title"],
+            description=t.get("description", ""),
+            goal_id=goal.id,
+            parent_id=None,
+            order_idx=order_idx,
+        )
+        db.session.add(new_task)
+        order_idx += 1
+    
+    db.session.commit()
     
     return jsonify(task_plan), 200
 
@@ -225,11 +236,14 @@ def generate_plan_for_goal(goal_id):
 @app.route(f"/api/tasks/<int:task_id>/generate-plan", methods=['POST'])
 def generate_plan_for_task(task_id):
     task = Task.query.get_or_404(task_id)
+    goal = Goal.query.get_or_404(task.goal_id)
 
-    #FIXME change this prompt to include the goal and eventually the whole task tree
+    # print('got task and goal')
+
     prompt = f"""
-    You are an expert project planner. Given the following task, generate a detailed plan of subtasks as structured JSON.
+    You are an expert project planner. Given the following goal, task, and description, generate a detailed plan of subtasks as structured JSON.
 
+    Goal: "{goal.title}
     Task: "{task.title}"
     Description: "{task.description or ''}"
 
@@ -258,28 +272,35 @@ def generate_plan_for_task(task_id):
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to generate subtasks"}), 500
+    
+    # print("got response")
 
     data = response.json()
     raw_output = data.get("response", "")
-    before, sep, after = raw_output.partition("```")
-    cleaned = after.strip()
-    before, sep, after = cleaned.partition("```")
-    cleaned = before.strip()
+    before, sep, after = raw_output.partition("[")
+    cleaned = sep + after.strip()
+    before, sep, after = cleaned.partition("]")
+    cleaned = before.strip() + sep
+    # print("raw:\n", raw_output)
+    # print("cleaned:\n", cleaned)
 
     try:
         subtask_plan = json.loads(cleaned)
     except Exception as e:
+        # print('\ndid not pass except!!!!!!!!!!!!!!!!!!!\n')
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
-
-    # Optionally save subtasks immediately
+    
+    order_idx = 0
     for sub in subtask_plan:
         new_subtask = Task(
             title=sub["title"],
             description=sub.get("description", ""),
             goal_id=task.goal_id,
-            parent_id=task.id
+            parent_id=task.id,
+            order_idx=order_idx
         )
         db.session.add(new_subtask)
+        order_idx += 1
     db.session.commit()
 
     return jsonify(subtask_plan), 200
