@@ -1,11 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, session
 from flask_cors import CORS
 import requests
 import os
-from models import db, Goal, Task
+from models import db, Goal, Task, User
 import json
 from flask_migrate import Migrate
-from sqlalchemy.orm import joinedload
+from functools import wraps
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -13,11 +13,12 @@ app = Flask(__name__, static_folder="../frontend/build", static_url_path='/')
 CORS(app)
 app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'app.db')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 db.init_app(app)
 migrate = Migrate(app, db)
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 @app.before_request
 def log_request_info():
@@ -33,22 +34,66 @@ def serve_static_file(path):
         return send_from_directory(app.static_folder, path)
     else:
         return send_from_directory(app.static_folder, "index.html")
+    
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify({"error": "Unauthorized"}), 401
+        return f(*args, **kwargs)
+    return decorated
+
+@app.route("/api/signup", methods=["POST"])
+def signup():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "Username already exists"}), 400
+
+    user = User(username=username)
+    user.set_password(password)
+    db.session.add(user)
+    db.session.commit()
+
+    session["user_id"] = user.id
+    return jsonify({"message": "Signup successful"})
+
+@app.route("/api/login", methods=["POST"])
+def login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password):
+        session["user_id"] = user.id
+        return jsonify({"message": "Login successful"})
+    return jsonify({"error": "Invalid username or password"}), 401
+
+@app.route("/api/logout", methods=["POST"])
+def logout():
+    session.clear()
+    return jsonify({"message": "Logged out"})
 
 @app.route("/api/goals", methods=["GET", "POST"])
+@login_required
 def list_or_create_goals():
     if request.method == "POST":
         data = request.get_json()
         goal_title = data.get("title")
         if not goal_title:
             return jsonify({"error": "Missing goal title"}), 400
-        new_goal = Goal(title=goal_title)
+        new_goal = Goal(title=goal_title, user_id=session["user_id"])
         db.session.add(new_goal)
         db.session.commit()
         return jsonify(new_goal.to_dict()), 201
-    goals = Goal.query.all()
+    goals = Goal.query.filter_by(user_id=session["user_id"]).all()
     return jsonify([goal.to_dict() for goal in goals])
 
 @app.route("/api/goals/<int:goal_id>", methods=['DELETE'])
+@login_required
 def delete_goal(goal_id):
     goal = Goal.query.get(goal_id)
     if not goal:
@@ -58,6 +103,7 @@ def delete_goal(goal_id):
     return jsonify({"message": "Goal deleted"}), 200
 
 @app.route("/api/goals/<int:goal_id>/", methods=['PUT'])
+@login_required
 def update_goal(goal_id):
     goal = Goal.query.get(goal_id)
     if not goal:
@@ -74,6 +120,7 @@ def update_goal(goal_id):
     return jsonify(goal.to_dict()), 200
 
 @app.route("/api/goals/<int:goal_id>/subtasks", methods=['POST'])
+@login_required
 def add_subtask(goal_id):
     data = request.get_json()
     title = data.get("title")
@@ -99,6 +146,7 @@ def add_subtask(goal_id):
 
 
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['GET'])
+@login_required
 def get_tasks_for_goal(goal_id):
     goal = Goal.query.get(goal_id)
     if not goal:
@@ -110,6 +158,7 @@ def get_tasks_for_goal(goal_id):
 
 
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
+@login_required
 def add_task(goal_id):
     data = request.get_json()
     print(data)
@@ -142,6 +191,7 @@ def add_task(goal_id):
     return jsonify(new_task.to_dict()), 201
 
 @app.route("/api/tasks/<int:task_id>", methods=['PUT'])
+@login_required
 def update_task(task_id):
     task = Task.query.get(task_id)
     if not task:
@@ -158,6 +208,7 @@ def update_task(task_id):
     return jsonify(task.to_dict()), 200
 
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
+@login_required
 def delete_task(task_id):
     task = Task.query.get(task_id)
     if not task:
@@ -169,6 +220,7 @@ def delete_task(task_id):
 
 
 @app.route(f"/api/goals/<int:goal_id>/generate-plan", methods=['POST'])
+@login_required
 def generate_plan_for_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
 
@@ -234,6 +286,7 @@ def generate_plan_for_goal(goal_id):
 
 
 @app.route(f"/api/tasks/<int:task_id>/generate-plan", methods=['POST'])
+@login_required
 def generate_plan_for_task(task_id):
     task = Task.query.get_or_404(task_id)
     goal = Goal.query.get_or_404(task.goal_id)

@@ -1,0 +1,43 @@
+.auth-form {
+  max-width: 320px;
+  margin: 100px auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auth-form label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 8px;
+  margin-top: 4px;
+  box-sizing: border-box;
+}
+
+.auth-form .error {
+  color: red;
+  margin-bottom: 10px;
+}
+
+.auth-form button {
+  width: 100%;
+  padding: 10px;
+}
+
+.auth-form p {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.auth-form a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+.auth-form a:hover {
+  text-decoration: underline;
+}
