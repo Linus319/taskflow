@@ -18,9 +18,6 @@ app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# with app.app_context():
-#     db.create_all()
-
 @app.before_request
 def log_request_info():
     print("REQUEST:", request.method, request.path)
@@ -229,46 +226,44 @@ def generate_plan_for_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
 
     prompt = f"""
-    You are an expert project planner. Given the following goal, generate a task plan as structured JSON.
+    Generate a concise project plan for the following goal as valid JSON.
+    Only output JSON. No explanations.
 
     Goal: "{goal.title}"
 
-    Each task should include:
+    Each task must have:
     - title
     - description
 
-    Output format:
+    Example:
     [
       {{
         "title": "First task",
         "description": "This is a brief description."
-      }},
-      ...
+      }}
     ]
     """
     response = requests.post(
         "http://localhost:11434/api/generate",
         json={
-            "model": "llama3",
+            "model": "mistral",
             "prompt": prompt.strip(),
-            "stream": False
-        }
+            "stream": False,
+            "options": {
+                "temperature": 0.2,    # less randomness
+                "num_predict": 400     # limit output length
+            }
+        },
+        # timeout=120  # safety timeout
     )
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to generate tasks"}), 500
-    
-    data = response.json()
-    raw_output = data.get("response", "")
-    before, sep, after = raw_output.partition("[")
-    cleaned = sep + after.strip()
-    before, sep, after = cleaned.partition("]")
-    cleaned = before.strip() + sep
-    # print("raw:\n", raw_output)
-    # print("cleaned:\n", cleaned)
 
     try:
-        task_plan = json.loads(cleaned)
+        raw_output = response.json().get("response", "")
+        json_str = raw_output[raw_output.find("["): raw_output.rfind("]") + 1]
+        task_plan = json.loads(json_str)
     except Exception as e:
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
     
@@ -295,56 +290,49 @@ def generate_plan_for_task(task_id):
     task = Task.query.get_or_404(task_id)
     goal = Goal.query.get_or_404(task.goal_id)
 
-    # print('got task and goal')
-
     prompt = f"""
-    You are an expert project planner. Given the following goal, task, and description, generate a detailed plan of subtasks as structured JSON.
+    Generate a concise list of subtasks for this task as valid JSON.
+    Only output JSON. No explanations.
 
-    Goal: "{goal.title}
+    Goal: "{goal.title}"
     Task: "{task.title}"
     Description: "{task.description or ''}"
 
-    Each subtask should include:
+    Each subtask must have:
     - title
     - description
 
-    Output format:
+    Example:
     [
       {{
         "title": "First subtask",
         "description": "Brief description"
-      }},
-      ...
+      }}
     ]
     """
 
     response = requests.post(
         "http://localhost:11434/api/generate",
         json={
-            "model": "llama3",
+            "model": "mistral", 
             "prompt": prompt.strip(),
-            "stream": False
-        }
+            "stream": False,
+            "options": {
+                "temperature": 0.2,
+                "num_predict": 400
+            }
+        },
+        # timeout=120
     )
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to generate subtasks"}), 500
-    
-    # print("got response")
-
-    data = response.json()
-    raw_output = data.get("response", "")
-    before, sep, after = raw_output.partition("[")
-    cleaned = sep + after.strip()
-    before, sep, after = cleaned.partition("]")
-    cleaned = before.strip() + sep
-    # print("raw:\n", raw_output)
-    # print("cleaned:\n", cleaned)
 
     try:
-        subtask_plan = json.loads(cleaned)
+        raw_output = response.json().get("response", "")
+        json_str = raw_output[raw_output.find("["): raw_output.rfind("]") + 1]
+        subtask_plan = json.loads(json_str)
     except Exception as e:
-        # print('\ndid not pass except!!!!!!!!!!!!!!!!!!!\n')
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
     
     order_idx = 0
