@@ -54,7 +54,7 @@ function SignupForm({ onSignupSuccess }) {
           />
         </label>
         <button type="submit">Sign Up</button>
-        <p style={{ marginTop: "1rem" }}>
+        <p className="auth-login-link">
             Already have an account?{" "}
             <Link to="/login">Login here</Link>
         </p>

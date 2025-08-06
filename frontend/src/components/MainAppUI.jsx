@@ -62,17 +62,6 @@ export default function MainAppUI({ fetchWithAuth, onLogout }) {
   };
 
   const handleUpdateGoal = (goalId, updatedFields) => {
-    // // debugging
-    // fetch(`/api/goals/${goalId}`, {
-    //   method: "PUT",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify(updatedFields),
-    // })
-    //   .then(r => r.json())
-    //   .then(console.log)
-    //   .catch(console.error);
-
-
     fetchWithAuth(`/api/goals/${goalId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

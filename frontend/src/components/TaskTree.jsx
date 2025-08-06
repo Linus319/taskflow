@@ -109,14 +109,8 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks })
   }
 
   return (
-    <div className={`task-node ${task.status}`} style={{ marginLeft: task.parent_id ? 20 : 0 }}>
+    <div className={`task-node ${task.status} ${task.parent_id ? "nested-task" : ""}`}>
       <div className="task-row">
-        {/* <input 
-          type="checkbox"
-          checked={task.status === "done"}
-          onChange={toggleComplete}
-          title="Mark complete"
-        /> */}
         <div
           className={`custom-checkbox ${task.status === "done" ? "checked" : ""}`}
           onClick={toggleComplete}

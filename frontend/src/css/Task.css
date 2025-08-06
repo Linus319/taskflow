@@ -70,3 +70,7 @@
   color: white;
   font-size: 14px;
 }
+
+.nested-task {
+  margin-left: 20px;
+}

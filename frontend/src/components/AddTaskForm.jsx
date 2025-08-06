@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "../css/AddTaskForm.css"
 
-function AddTaskForm({ goalId, onSubmit, onCancel }) {
+function AddTaskForm({ onSubmit, onCancel }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 

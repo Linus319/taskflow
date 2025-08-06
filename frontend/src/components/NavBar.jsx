@@ -21,8 +21,7 @@ export function NavBar({ isLoggedIn, onLogout }) {
         )}
         {isLoggedIn && (
           <button
-            className="navbar-link"
-            style={{ background: "none", border: "none", cursor: "pointer" }}
+            className="navbar-link navbar-logout"
             onClick={onLogout}
           >
             Logout
