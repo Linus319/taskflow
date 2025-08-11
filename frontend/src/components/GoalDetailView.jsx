@@ -7,6 +7,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     const [showAddTask, setShowAddTask] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(goal?.title || "");
+    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
     useEffect(() => {
         if (goal) {
@@ -19,7 +20,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     }
 
     const goalTasks = tasks.filter(t => t.goal_id === goal.id);
-    console.log("tasks from goaldetailview:", goalTasks);
+    // console.log("tasks from goaldetailview:", goalTasks);
     const hasTopLevelTasks = goalTasks.some(t => !t.parent_id);
 
     const handleAddTaskClick = (e) => {
@@ -39,6 +40,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     };
 
     async function handleGeneratePlan() {
+        setIsGeneratingPlan(true);
         try {
             const res = await fetch(`/api/goals/${goal.id}/generate-plan`, {
                 method: "POST",
@@ -52,6 +54,8 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
         } catch (err) {
             console.error(err);
             alert("Could not generate plan");
+        } finally {
+            setIsGeneratingPlan(false);
         }
     }
 
@@ -82,7 +86,13 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
                 <button onClick={() => onDeleteGoal(goal.id)}>🗑️ Delete</button>
                 <button onClick={handleAddTaskClick}>Add Task</button>
                 {!hasTopLevelTasks && (
-                    <button onClick={handleGeneratePlan}>Generate Plan</button>
+                    <button 
+                        onClick={handleGeneratePlan}
+                        disabled={isGeneratingPlan}
+                        className={`generate-plan-btn ${isGeneratingPlan ? 'loading' : ''}`}
+                    >
+                        {isGeneratingPlan ? 'Generating...' : 'Generate Plan'}
+                    </button>
                 )}
             </div>
             

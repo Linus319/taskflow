@@ -149,6 +149,7 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, i
   const [newTitle, setNewTitle] = useState(task.title);
   const [showAddSubtaskForm, setShowAddSubtaskForm] = useState(false);
   const [newDescription, setNewDescription] = useState(task.description);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const toggleComplete = async () => {
     const newStatus = task.status === "done" ? "active" : "done";
@@ -156,6 +157,7 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, i
   }
 
   async function handleGeneratePlan(taskId) {
+    setIsGeneratingPlan(true);
     try {
       const res = await fetch(`/api/tasks/${taskId}/generate-plan`, {
         method: "POST",
@@ -168,6 +170,8 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, i
     } catch (err) {
       console.error(err);
       alert("Could not generate plan for this task");
+    } finally {
+      setIsGeneratingPlan(false);
     }
   }
 
@@ -223,7 +227,14 @@ function TaskNode({ task, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, i
               </div>
               <button title="Add subtask" onClick={() => setShowAddSubtaskForm(true)}>➕</button>
               {task.subtasks?.length === 0 && (
-                <button title="Generate plan" onClick={() => handleGeneratePlan(task.id)}>🪄</button>
+                <button 
+                  title="Generate plan" 
+                  onClick={() => handleGeneratePlan(task.id)}
+                  disabled={isGeneratingPlan}
+                  className={`generate-plan-btn ${isGeneratingPlan ? 'loading' : ''}`}
+                >
+                  {isGeneratingPlan ? '⏳' : '🪄'}
+                </button>
               )}
               <button title="Edit task" onClick={() => setIsEditing(true)}>✏️</button>
               <button title="Delete task" onClick={() => onDeleteTask(task.id)}>🗑️</button>
