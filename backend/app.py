@@ -154,6 +154,22 @@ def get_tasks_for_goal(goal_id):
 
     return jsonify([task.to_dict(recursive=True) for task in all_tasks])
 
+# def would_create_cycle(task, new_parent_id):
+#     if new_parent_id is None:
+#         return False
+#     if task.id == new_parent_id:
+#         return True  
+
+#     parent = Task.query.get(new_parent_id)
+#     if not parent:
+#         return False  
+    
+#     current = parent
+#     while current:
+#         if current.id == task.id:
+#             return True
+#         current = current.parent
+#     return False
 
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
 @login_required
@@ -217,6 +233,41 @@ def delete_task(task_id):
     db.session.delete(task)
     db.session.commit()
     return jsonify({"message": "Task deleted"}), 200
+
+
+@app.route("/api/goals/<int:goal_id>/tasks/reorder", methods=["POST"])
+@login_required
+def reorder_root_tasks(goal_id):
+    print(f"Starting reorder tasks for goal")
+    data = request.get_json()
+    ordered_ids = data.get("ordered_ids")
+    print("ORDERED_IDS:", ordered_ids)
+    goal = Goal.query.get(goal_id)
+    if not goal:
+        return jsonify({"error": "Goal not found"}), 404
+        
+    for item in ordered_ids:
+        task_id = item.get('id')
+        new_order_idx = item.get('order_idx')
+        task = Task.query.get(task_id)
+        task.order_idx = new_order_idx
+            
+    db.session.commit()
+
+    root_tasks = Task.query.filter_by(goal_id=goal_id, parent_id=None).order_by(Task.order_idx.asc()).all()
+
+    return jsonify([task.to_dict(recursive=True) for task in root_tasks])
+
+    
+    
+
+
+
+@app.route("/api/tasks/<int:task_id>/reorder", methods=["POST"])
+@login_required
+def reorder_sub_tasks(task_id):
+    print(f"Starting reorder for subtasks of task {task_id}")
+    jsonify()
 
 
 

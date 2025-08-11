@@ -49,7 +49,12 @@ class Task(db.Model):
     status = db.Column(db.String(20), default='active') # active, done, archived
 
     goal = db.relationship("Goal", back_populates="tasks")
-    parent = db.relationship('Task', remote_side=[id], backref='subtasks')
+    parent = db.relationship(
+        'Task', remote_side=[id], 
+        backref=db.backref('subtasks', 
+        cascade="all, delete-orphan", 
+        single_parent=True)
+    )
 
     def to_dict(self, recursive=True):
         base = {

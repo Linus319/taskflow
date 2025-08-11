@@ -19,6 +19,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
     }
 
     const goalTasks = tasks.filter(t => t.goal_id === goal.id);
+    console.log("tasks from goaldetailview:", goalTasks);
     const hasTopLevelTasks = goalTasks.some(t => !t.parent_id);
 
     const handleAddTaskClick = (e) => {
@@ -90,6 +91,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
             )}
             
             <TaskTree
+                goalId={goal.id}
                 tasks={goalTasks}
                 onAddTask={handleAddTask}
                 onUpdateTask={onUpdateTask}

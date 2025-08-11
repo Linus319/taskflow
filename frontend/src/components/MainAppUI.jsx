@@ -4,7 +4,7 @@ import GoalSidebar from "./GoalSidebar";
 import AddGoalForm from "./AddGoalForm";
 import GoalDetailView from "./GoalDetailView";
 
-export default function MainAppUI({ fetchWithAuth, onLogout }) {
+export default function MainAppUI({ fetchWithAuth }) {
   const [goals, setGoals] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [showAddGoalForm, setShowAddGoalForm] = useState(false);
