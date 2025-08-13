@@ -17,14 +17,104 @@
 
 .goal-actions {
   margin-bottom: 1rem;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .goal-actions button {
-  padding: 0.5rem 1rem;
-  font-size: 1rem;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+  background: #f5f5f5;
+  color: #333;
+  border: 1px solid #ddd;
 }
 
+.goal-actions button:hover:not(:disabled) {
+  background: #e8e8e8;
+  border-color: #999;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.goal-actions .generate-plan-btn {
+  background: #1976d2;
+  color: white;
+  border-color: #1976d2;
+}
+
+.goal-actions .generate-plan-btn:hover:not(:disabled) {
+  background: #1565c0;
+  border-color: #1565c0;
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.goal-edit-form {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.goal-edit-form input {
+  padding: 12px 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 18px;
+  font-weight: bold;
+  background: white;
+  flex: 1;
+  min-width: 200px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.goal-edit-form input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.goal-edit-form button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.goal-edit-form button:first-of-type {
+  background: #1976d2;
+  color: white;
+}
+
+.goal-edit-form button:first-of-type:hover {
+  background: #1565c0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(25, 118, 210, 0.3);
+}
+
+.goal-edit-form button:last-of-type {
+  background: transparent;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.goal-edit-form button:last-of-type:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: #999;
+}
+
+/* Generate Plan Button Styles */
 .generate-plan-btn {
   position: relative;
   transition: all 0.2s ease;
