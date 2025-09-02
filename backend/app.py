@@ -154,23 +154,6 @@ def get_tasks_for_goal(goal_id):
 
     return jsonify([task.to_dict(recursive=True) for task in all_tasks])
 
-# def would_create_cycle(task, new_parent_id):
-#     if new_parent_id is None:
-#         return False
-#     if task.id == new_parent_id:
-#         return True  
-
-#     parent = Task.query.get(new_parent_id)
-#     if not parent:
-#         return False  
-    
-#     current = parent
-#     while current:
-#         if current.id == task.id:
-#             return True
-#         current = current.parent
-#     return False
-
 @app.route("/api/goals/<int:goal_id>/tasks", methods=['POST'])
 @login_required
 def add_task(goal_id):
@@ -220,6 +203,9 @@ def update_task(task_id):
 
     if "status" in data:
         task.status = data["status"]
+    
+    if "order_idx" in data:
+        task.order_idx = data["order_idx"]
 
     db.session.commit()
     return jsonify(task.to_dict()), 200
