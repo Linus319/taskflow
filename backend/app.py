@@ -12,7 +12,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__, static_folder="../frontend/build", static_url_path='/')
 CORS(app)
 CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
-app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite:///{os.path.join(basedir, 'app.db')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(basedir, 'app.db')}"
+)
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 db.init_app(app)

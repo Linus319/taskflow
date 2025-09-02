@@ -5,7 +5,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 # Final stage: minimal runtime
-FROM gcr.io/distroless/python3.11
+FROM gcr.io/distroless/python3.11:nonroot
 WORKDIR /app
 
 # Copy installed dependencies
