@@ -1,19 +1,28 @@
-# Builder stage: install dependencies
-FROM python:3.11-slim as builder
-WORKDIR /app
+# Build stage
+FROM python:3.11-slim AS builder
+
+# Set environment variables
+ENV VENV=/opt/venv
+ENV PATH="$VENV/bin:$PATH"
+
+# Install dependencies
+RUN python -m venv $VENV
 COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+RUN $VENV/bin/pip install --upgrade pip && \
+    $VENV/bin/pip install --no-cache-dir -r requirements.txt
 
-# Final stage: minimal runtime
-FROM gcr.io/distroless/python3.11:nonroot
+# Final stage
+FROM gcr.io/distroless/python3
+
+# Set environment variables
+ENV VENV=/opt/venv
+ENV PATH="$VENV/bin:$PATH"
+
+# Copy application and virtual environment
 WORKDIR /app
-
-# Copy installed dependencies
-COPY --from=builder /install /usr/local
-
-# Copy app code
+COPY --from=builder $VENV $VENV
 COPY . .
 
-EXPOSE 8000
-
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "app:app"]
+# Expose port and set entrypoint
+EXPOSE 5000
+ENTRYPOINT ["python3", "app.py"]
