@@ -11,11 +11,9 @@ services:
       - .env
     environment:
       FLASK_ENV: production
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-key}
+      SECRET_KEY: ${SECRET_KEY}
     ports:
       - "5000:5000"
-    volumes:
-      - ./backend:/app
     networks:
       - taskapp-network
 
