@@ -3,7 +3,7 @@ import AddTaskForm from "./AddTaskForm";
 import TaskTree from "./TaskTree";
 import "../css/GoalDetailView.css";
 
-function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, onDeleteGoal, onUpdateGoal }) {
+function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, onDeleteGoal, onUpdateGoal, onBatchUpdateTasks }) {
     const [showAddTask, setShowAddTask] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(goal?.title || "");
@@ -107,6 +107,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
                 onUpdateTask={onUpdateTask}
                 onDeleteTask={onDeleteTask}
                 refreshTasks={refreshTasks}
+                onBatchUpdateTasks={onBatchUpdateTasks}
             />
             
         </div>

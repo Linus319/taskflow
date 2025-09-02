@@ -158,12 +158,9 @@ def get_tasks_for_goal(goal_id):
 @login_required
 def add_task(goal_id):
     data = request.get_json()
-    print(data)
     title = data.get("title")
     parent_id = data.get("parent_id")
     description = data.get("description", "")
-
-    print("Creating task:", title, "| Description:", description)
 
     if not title:
         return jsonify({'error': 'Missing task title'}), 400
@@ -209,6 +206,44 @@ def update_task(task_id):
 
     db.session.commit()
     return jsonify(task.to_dict()), 200
+
+
+@app.route('/api/tasks/batch-update', methods=["POST"])
+@login_required
+def batch_update_tasks():
+    data = request.get_json()
+    updates = data.get("updates", [])
+
+    if not updates:
+        return jsonify({"error": "No updates provided"}), 400
+    
+    try:
+        for update in updates:
+            task_id = update.get("id")
+            task = Task.query.get(task_id)
+
+            if not task:
+                return jsonify({"error": f"Task {task_id} not found"}), 404
+            
+            if "order_idx" in update:
+                task.order_idx = update["order_idx"]
+            
+            if "status" in update:
+                task.status = update["status"]
+            if "title" in update:
+                task.title = update["title"]
+        
+        db.session.commit()
+
+        return jsonify({
+            "message": f"Successfully updated {len(updates)} tasks",
+            "updated_count": len(updates)
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Failed to update tasks: {str(e)}"}), 500
+
+
 
 @app.route("/api/tasks/<int:task_id>", methods=["DELETE"])
 @login_required

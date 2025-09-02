@@ -35,7 +35,7 @@ function buildTaskTree(tasks) {
   return roots;
 }
 
-function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks }) {
+function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, onBatchUpdateTasks }) {
   const taskTree = useMemo(() => buildTaskTree(tasks), [tasks]);
 
   const handleAddTask = useCallback((taskData) => {
@@ -50,7 +50,7 @@ function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks }
     onDeleteTask(taskId);
   }, [onDeleteTask]);
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
 
     if (!over || active.id === over.id) return; 
@@ -86,9 +86,7 @@ function TaskTree({ tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks }
       order_idx: index
     }));
 
-    updates.forEach(({ id, order_idx }) => {
-      onUpdateTask(id, { order_idx });
-    });
+    onBatchUpdateTasks(updates);
   }
 
   if (!taskTree.length) {

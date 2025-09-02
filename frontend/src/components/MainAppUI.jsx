@@ -98,6 +98,23 @@ export default function MainAppUI({ fetchWithAuth }) {
       .then(() => refreshTasks());
   };
 
+  const handleBatchUpdateTasks = (updates) => {
+    fetchWithAuth('/api/tasks/batch-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ updates })
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to batch update tasks');
+        return res.json();
+      })
+      .then(() => refreshTasks())
+      .catch((err) => {
+        console.error('Batch update failed:', err);
+        alert('Failed to reorder tasks. Please try again.');
+      });
+  };
+
   const handleDeleteTask = (taskId) => {
     fetchWithAuth(`/api/tasks/${taskId}`, { method: "DELETE" })
       .then((res) => {
@@ -131,6 +148,7 @@ export default function MainAppUI({ fetchWithAuth }) {
           refreshTasks={refreshTasks}
           onDeleteGoal={handleDeleteGoal}
           onUpdateGoal={handleUpdateGoal}
+          onBatchUpdateTasks={handleBatchUpdateTasks}
         />
         {showAddTaskForm && (
           <AddTaskForm
