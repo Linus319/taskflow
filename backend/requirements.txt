@@ -4,4 +4,4 @@ Flask-SQLAlchemy
 Flask-Migrate
 Werkzeug
 requests
-gunicorn
+gnunicorn
