@@ -6,12 +6,14 @@ from models import db, Goal, Task, User
 import json
 from flask_migrate import Migrate
 from functools import wraps
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__, static_folder="../frontend/build", static_url_path='/')
 CORS(app)
-CORS(app, supports_credentials=True, origins=["http://localhost:3000"])
+CORS(app, supports_credentials=True, origins=["http://bigwetstudios.com"])
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
     "DATABASE_URL",
     f"sqlite:///{os.path.join(basedir, 'app.db')}"
@@ -282,23 +284,16 @@ def reorder_root_tasks(goal_id):
 
     return jsonify([task.to_dict(recursive=True) for task in root_tasks])
 
-    
-    
 
 
 
-@app.route("/api/tasks/<int:task_id>/reorder", methods=["POST"])
-@login_required
-def reorder_sub_tasks(task_id):
-    print(f"Starting reorder for subtasks of task {task_id}")
-    jsonify()
-
-
+OLLAMA_API = os.environ.get("OLLAMA_API", "http://ollama:11434")
 
 @app.route(f"/api/goals/<int:goal_id>/generate-plan", methods=['POST'])
 @login_required
 def generate_plan_for_goal(goal_id):
     goal = Goal.query.get_or_404(goal_id)
+
 
     prompt = f"""
     Generate a concise project plan for the following goal as valid JSON.
@@ -309,54 +304,58 @@ def generate_plan_for_goal(goal_id):
     Each task must have:
     - title
     - description
-
-    Example:
-    [
-      {{
-        "title": "First task",
-        "description": "This is a brief description."
-      }}
-    ]
     """
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "mistral",
-            "prompt": prompt.strip(),
-            "stream": False,
-            "options": {
+
+    try:
+        response = requests.post(
+            f"{OLLAMA_API}/v1/completions",
+            json={
+                "model": "mistral:latest",
+                "prompt": prompt.strip(),
                 "temperature": 0.2,    # less randomness
-                "num_predict": 400     # limit output length
-            }
-        },
-        # timeout=120  # safety timeout
-    )
+                "max_tokens": 512     # limit output length
+            },
+            timeout=120
+        )
+
+    except Exception as e:
+        return jsonify({"error": "Failed to call Ollama", "details": str(e)}), 500
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to generate tasks"}), 500
 
     try:
-        raw_output = response.json().get("response", "")
-        json_str = raw_output[raw_output.find("["): raw_output.rfind("]") + 1]
-        task_plan = json.loads(json_str)
+        data = response.json()
+        raw_output = data.get("choices", [{}])[0].get("text", "").strip()
+
+        if not raw_output:
+            return jsonify({"error": "Empty AI response"}), 400
+
+        start = raw_output.find("{")
+        end = raw_output.rfind("}") + 1
+        if start == -1 or end == 0:
+            return jsonify({"error": "Failed to parse AI output", "details": "No JSON found"}), 400
+        
+        json_str = raw_output[start:end]
+        parsed_data = json.loads(json_str)
+        task_list = parsed_data.get("project", {}).get("tasks", [])
     except Exception as e:
+        logging.exception("Error parsing AI output")
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
     
-    order_idx = 0
-    for t in task_plan:
+    for idx, t in enumerate(task_list):
         new_task = Task(
-            title=t["title"],
+            title=t.get("title", "Untitled"),
             description=t.get("description", ""),
             goal_id=goal.id,
             parent_id=None,
-            order_idx=order_idx,
+            order_idx=idx
         )
         db.session.add(new_task)
-        order_idx += 1
     
     db.session.commit()
     
-    return jsonify(task_plan), 200
+    return jsonify(task_list), 200
 
 
 @app.route(f"/api/tasks/<int:task_id>/generate-plan", methods=['POST'])
@@ -376,51 +375,63 @@ def generate_plan_for_task(task_id):
     Each subtask must have:
     - title
     - description
-
-    Example:
-    [
-      {{
-        "title": "First subtask",
-        "description": "Brief description"
-      }}
-    ]
     """
 
-    response = requests.post(
-        "http://localhost:11434/api/generate",
-        json={
-            "model": "mistral", 
-            "prompt": prompt.strip(),
-            "stream": False,
-            "options": {
+    try:
+        response = requests.post(
+            f"{OLLAMA_API}/v1/completions",
+            json={
+                "model": "mistral:latest", 
+                "prompt": prompt.strip(),
                 "temperature": 0.2,
-                "num_predict": 400
-            }
-        },
-        # timeout=120
-    )
+                "max_tokens": 512
+            },
+            timeout=120
+        )
+    except Exception as e:
+        return jsonify({"error": "Failed to call Ollama", "details": str(e)}), 500
 
     if response.status_code != 200:
         return jsonify({"error": "Failed to generate subtasks"}), 500
 
     try:
-        raw_output = response.json().get("response", "")
-        json_str = raw_output[raw_output.find("["): raw_output.rfind("]") + 1]
-        subtask_plan = json.loads(json_str)
+        data = response.json()
+        raw_output = data.get("choices", [{}])[0].get("text", "").strip()
+
+        if not raw_output:
+            return jsonify({"error": "Empty AI response"}), 400
+
+        start = raw_output.find("{")
+        end = raw_output.rfind("}") + 1
+        if start == -1 or end == 0:
+            return jsonify({'error': 'Failed to parse AI output', 'details': 'No JSON found'}), 400
+
+        json_str = raw_output[start:end]
+        parsed_data = json.loads(json_str)
+        if isinstance(parsed_data, dict):
+            if "project" in parsed_data:
+                subtask_plan = parsed_data["project"].get("tasks", [])
+            elif "subtasks" in parsed_data:
+                subtask_plan = parsed_data["subtasks"]
+            else:
+                subtask_plan = []
+        elif isinstance(parsed_data, list):
+            subtask_plan = parsed_data
+        else:
+            subtask_plan = []
     except Exception as e:
+        logging.exception("Error parsing AI output")
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
     
-    order_idx = 0
-    for sub in subtask_plan:
+    for idx, sub in enumerate(subtask_plan):
         new_subtask = Task(
-            title=sub["title"],
+            title=sub.get("title", "Untitled"),
             description=sub.get("description", ""),
             goal_id=task.goal_id,
             parent_id=task.id,
-            order_idx=order_idx
+            order_idx=idx
         )
         db.session.add(new_subtask)
-        order_idx += 1
     db.session.commit()
 
     return jsonify(subtask_plan), 200
@@ -428,4 +439,4 @@ def generate_plan_for_task(task_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="localhost", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=5000)
