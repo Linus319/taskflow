@@ -25,9 +25,7 @@ def create_goal():
 @bp.route("/api/goals/<int:goal_id>", methods=['DELETE'])
 @login_required
 def delete_goal(goal_id):
-    goal = Goal.query.get(goal_id)
-    if not goal:
-        return jsonify({"error": "Goal not found"}), 404
+    goal = Goal.query.get_or_404(goal_id)
     db.session.delete(goal)
     db.session.commit()
     return jsonify({"message": "Goal deleted"}), 200
@@ -35,9 +33,7 @@ def delete_goal(goal_id):
 @bp.route("/api/goals/<int:goal_id>", methods=['PUT'])
 @login_required
 def update_goal(goal_id):
-    goal = Goal.query.get(goal_id)
-    if not goal:
-        return jsonify({"error": "Goal not found"}), 404
+    goal = Goal.query.get_or_404(goal_id)
     
     data = request.get_json()
     new_title = data.get("title")
