@@ -7,4 +7,5 @@
 *.pyc
 /backend/migrations/__pycache__/
 /backend/migrations/versions/__pycache__/
-.env
+.env.dev
+.env.prod

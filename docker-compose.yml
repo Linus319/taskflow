@@ -1,14 +1,13 @@
-version: "3.9"
-
 services:
-  backend:
+  # production backend
+  backend-prod:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: taskapp-backend
+    container_name: taskapp-backend-prod
     restart: unless-stopped
     env_file:
-      - .env
+      - .env.prod
     ports:
       - "5000:5000"
     volumes:
@@ -17,20 +16,23 @@ services:
       - taskapp-network
     command: >
       sh -c "flask db upgrade &&
-             gunicorn -b 0.0.0.0:5000 app:app --timeout 300 --log-level debug --capture-output --enable-stdio-inheritance"
+             gunicorn -b 0.0.0.0:5000 app:app --timeout 300 --log-level info"
 
-  frontend:
+  # production frontend
+  frontend-prod:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: taskapp-frontend
+    container_name: taskapp-frontend-prod
     restart: unless-stopped
+    env_file:
+      - .env.prod
     expose:
       - "80"
     networks:
       - taskapp-network
     depends_on:
-      - backend
+      - backend-prod
 
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
