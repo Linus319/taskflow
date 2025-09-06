@@ -7,25 +7,21 @@ import json
 from flask_migrate import Migrate
 from functools import wraps
 import logging
+import re
+
+from config import Config
 
 logging.basicConfig(level=logging.DEBUG)
-basedir = os.path.abspath(os.path.dirname(__file__))
-
+logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder="../frontend/build", static_url_path='/')
-CORS(app)
-CORS(app, supports_credentials=True, origins=["http://bigwetstudios.com"])
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    "DATABASE_URL",
-    f"sqlite:///{os.path.join(basedir, 'app.db')}"
-)
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+app.config.from_object(Config)
+CORS(app, supports_credentials=True, origins=app.config['CORS_ORIGINS'])
 db.init_app(app)
 migrate = Migrate(app, db)
 
 @app.before_request
 def log_request_info():
-    print("REQUEST:", request.method, request.path)
+    logger.debug("REQUEST: %s %s", request.method, request.path)
 
 @app.route("/")
 def serve():
@@ -264,10 +260,8 @@ def delete_task(task_id):
 @app.route("/api/goals/<int:goal_id>/tasks/reorder", methods=["POST"])
 @login_required
 def reorder_root_tasks(goal_id):
-    print(f"Starting reorder tasks for goal")
     data = request.get_json()
     ordered_ids = data.get("ordered_ids")
-    print("ORDERED_IDS:", ordered_ids)
     goal = Goal.query.get(goal_id)
     if not goal:
         return jsonify({"error": "Goal not found"}), 404
@@ -287,7 +281,36 @@ def reorder_root_tasks(goal_id):
 
 
 
-OLLAMA_API = os.environ.get("OLLAMA_API", "http://ollama:11434")
+def extract_tasks(parsed_data):
+    """
+    Normalize AI JSON into a list of tasks/subtasks.
+    Supports multiple shapes:
+    - {"project": {"tasks": [...]}}
+    - {"tasks": [...]}
+    - {"subtasks": [...]}
+    - top-level list
+    """
+    if isinstance(parsed_data, dict):
+        if "project" in parsed_data and isinstance(parsed_data["project"], dict):
+            return parsed_data["project"].get("tasks", [])
+        if "tasks" in parsed_data:
+            return parsed_data.get("tasks", [])
+        if "subtasks" in parsed_data:
+            return parsed_data.get("subtasks", [])
+    elif isinstance(parsed_data, list):
+        return parsed_data
+    return []
+
+def clean_json_string(raw: str) -> str:
+    """
+    Remove comments and invalid trailing text from Ollama output.
+    """
+    # Remove JS-style comments
+    raw = re.sub(r'//.*', '', raw)
+    # Remove trailing commas before closing brackets/braces
+    raw = re.sub(r',\s*([\]}])', r'\1', raw)
+    return raw.strip()
+
 
 @app.route(f"/api/goals/<int:goal_id>/generate-plan", methods=['POST'])
 @login_required
@@ -297,7 +320,7 @@ def generate_plan_for_goal(goal_id):
 
     prompt = f"""
     Generate a concise project plan for the following goal as valid JSON.
-    Only output JSON. No explanations.
+    Only output JSON. No explanations, and no comments.
 
     Goal: "{goal.title}"
 
@@ -308,7 +331,7 @@ def generate_plan_for_goal(goal_id):
 
     try:
         response = requests.post(
-            f"{OLLAMA_API}/v1/completions",
+            f"{app.config['OLLAMA_API']}/v1/completions",
             json={
                 "model": "mistral:latest",
                 "prompt": prompt.strip(),
@@ -331,14 +354,16 @@ def generate_plan_for_goal(goal_id):
         if not raw_output:
             return jsonify({"error": "Empty AI response"}), 400
 
+        logger.debug("Ollama raw_output %s", raw_output)
+
         start = raw_output.find("{")
         end = raw_output.rfind("}") + 1
         if start == -1 or end == 0:
             return jsonify({"error": "Failed to parse AI output", "details": "No JSON found"}), 400
         
         json_str = raw_output[start:end]
-        parsed_data = json.loads(json_str)
-        task_list = parsed_data.get("project", {}).get("tasks", [])
+        parsed_data = json.loads(clean_json_string(json_str))
+        task_list = extract_tasks(parsed_data)
     except Exception as e:
         logging.exception("Error parsing AI output")
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
@@ -366,7 +391,7 @@ def generate_plan_for_task(task_id):
 
     prompt = f"""
     Generate a concise list of subtasks for this task as valid JSON.
-    Only output JSON. No explanations.
+    Only output JSON. No explanations, and no comments.
 
     Goal: "{goal.title}"
     Task: "{task.title}"
@@ -379,7 +404,7 @@ def generate_plan_for_task(task_id):
 
     try:
         response = requests.post(
-            f"{OLLAMA_API}/v1/completions",
+            f"{app.config['OLLAMA_API']}/v1/completions",
             json={
                 "model": "mistral:latest", 
                 "prompt": prompt.strip(),
@@ -407,18 +432,8 @@ def generate_plan_for_task(task_id):
             return jsonify({'error': 'Failed to parse AI output', 'details': 'No JSON found'}), 400
 
         json_str = raw_output[start:end]
-        parsed_data = json.loads(json_str)
-        if isinstance(parsed_data, dict):
-            if "project" in parsed_data:
-                subtask_plan = parsed_data["project"].get("tasks", [])
-            elif "subtasks" in parsed_data:
-                subtask_plan = parsed_data["subtasks"]
-            else:
-                subtask_plan = []
-        elif isinstance(parsed_data, list):
-            subtask_plan = parsed_data
-        else:
-            subtask_plan = []
+        parsed_data = json.loads(clean_json_string(json_str))
+        subtask_plan = extract_tasks(parsed_data)
     except Exception as e:
         logging.exception("Error parsing AI output")
         return jsonify({"error": "Failed to parse AI output", "details": str(e)}), 400
@@ -439,4 +454,4 @@ def generate_plan_for_task(task_id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=app.config.get("DEBUG", False), host="0.0.0.0", port=5000)

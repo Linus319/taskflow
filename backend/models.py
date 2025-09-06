@@ -45,7 +45,7 @@ class Task(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey('task.id'), nullable=True)
 
     created_at = db.Column(db.DateTime, default=db.func.now())
-    order_idx = db.Column(db.Integer) # what does this do
+    order_idx = db.Column(db.Integer)
     status = db.Column(db.String(20), default='active') # active, done, archived
 
     goal = db.relationship("Goal", back_populates="tasks")
