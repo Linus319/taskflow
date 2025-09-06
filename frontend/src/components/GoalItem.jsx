@@ -1,6 +1,8 @@
-import "../css/GoalItem.css"
+import "../css/GoalItem.css";
 
 function GoalItem({ goal, isSelected, onSelect }) {
+    console.log('Render GoalItem:', goal.id, goal.title);
+
     const handleClick = (e) => {
         if (e.target.closest(".delete-button") || e.target.closest(".edit-button")) return;
         onSelect(goal);
@@ -8,7 +10,7 @@ function GoalItem({ goal, isSelected, onSelect }) {
 
     return (
         <li
-            className={`goal-item ${isSelected ? "active" : ""}` }
+            className={`goal-item ${isSelected ? "active" : ""}`}
             onClick={handleClick}
         >
             <span className="goal-icon">🗂️</span>

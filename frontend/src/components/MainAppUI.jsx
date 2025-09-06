@@ -39,66 +39,152 @@ export default function MainAppUI({ fetchWithAuth }) {
       .then(setTasks);
   };
 
-  const handleGoalAdded = (newGoal) => {
-    setGoals((prev) => [...prev, newGoal]);
-    setShowAddGoalForm(false);
-  };
+  const handleGoalAdded = (title) => {
+    const tempId = `temp-${Date.now()}`;
+    const tempGoal = { id: tempId, title };
 
-  const handleAddGoalButtonClick = () => {
-    setShowAddGoalForm(true);
+    setGoals((prev) => [...prev, tempGoal]);
+    setShowAddGoalForm(false);
+    setSelectedGoalId(tempId);
+
+    fetchWithAuth("/api/goals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title })
+    })
+      .then((res) => res.json())
+      .then((serverGoal) => {
+        setGoals((prev) =>
+          prev.map((g) => (g.id === tempId ? serverGoal : g))
+        );
+        setSelectedGoalId(serverGoal.id);
+      })
+      .catch((err) => {
+        setGoals((prev) => prev.filter((g) => g.id !== tempId));
+        console.error("Failed to add goal:", err);
+      });
   };
 
   const handleDeleteGoal = (goalId) => {
+    const prevGoals = goals;
+    setGoals((prevGoals) => prevGoals.filter((g) => g.id !== goalId));
+    if (selectedGoal?.id === goalId) setSelectedGoalId(null);
+
     fetchWithAuth(`/api/goals/${goalId}`, { method: "DELETE" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to delete goal");
         return res.json();
       })
-      .then(() => {
-        setGoals((prevGoals) => prevGoals.filter((g) => g.id !== goalId));
-        if (selectedGoal?.id === goalId) setSelectedGoalId(null);
-      })
-      .catch((err) => console.error("Delete goal failed:", err));
+      .catch((err) => {
+        setGoals(prevGoals);
+        console.error("Delete goal failed:", err)
+      });
   };
 
   const handleUpdateGoal = (goalId, updatedFields) => {
+    const oldGoals = goals;
+
+    setGoals((prev) =>
+      prev.map((goal) =>
+        goal.id === goalId ? { ...goal, ...updatedFields } : goal
+      )
+    );
+
     fetchWithAuth(`/api/goals/${goalId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedFields),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to update goal");
+        return res.json()
+      })
       .then((updatedGoal) => {
         setGoals((prev) =>
           prev.map((goal) =>
-            goal.id === updatedGoal.id ? updatedGoal : goal
+            goal.id === updatedGoal.id ? { ...updatedGoal } : goal
           )
         );
+      })
+      .catch((err) => {
+        console.error("Update goal failed:", err);
+        setGoals(oldGoals);
       });
   };
 
   const handleAddTask = ({ title, parentId = null, description = "" }) => {
-    if (!selectedGoal) return;
+    if (!selectedGoal || String(selectedGoal.id).startsWith("temp-")) {
+      alert("You can’t add tasks until the goal is saved to the server.");
+      return;
+    }
+
+    const tempId = `temp-${Date.now()}`;
+    const tempTask = {
+      id: tempId,
+      goal_id: selectedGoal.id,
+      parent_id: parentId,
+      title,
+      description,
+    };
+
+    setTasks(prev => [...prev, tempTask]);
+
     fetchWithAuth(`/api/goals/${selectedGoal.id}/tasks`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title, parent_id: parentId, description }),
     })
       .then((res) => res.json())
-      .then(() => refreshTasks());
+      .then((serverTask) => {
+        setTasks(prev =>
+          prev.map(t => (t.id === tempId ? serverTask : t))
+        );
+      })
+      .catch((err) => {
+        setTasks(prev => prev.filter(t => t.id !== tempId));
+        console.error("Failed to add task:", err);
+        alert("Failed to add task.");
+      })
   };
 
   const handleUpdateTask = (taskId, updatedFields) => {
+    const prevTasks = tasks;
+
+    setTasks(prev =>
+      prev.map(t => (t.id === taskId ? { ...t, ...updatedFields } : t))
+    );
+
     fetchWithAuth(`/api/tasks/${taskId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedFields),
     })
-      .then((res) => res.json())
-      .then(() => refreshTasks());
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to update task");
+        return res.json();
+      })
+      .then((serverTask) => {
+        setTasks(prev =>
+          prev.map(t => (t.id === serverTask.id ? serverTask : t))
+        );
+      })
+      .catch((err) => {
+        console.error("Update task failed:", err);
+        setTasks(prevTasks);
+        alert("Failed to update task. Please try again.");
+      });
   };
 
   const handleBatchUpdateTasks = (updates) => {
+    const prevTasks = tasks;
+
+    setTasks(prev =>
+      prev.map(task => {
+        const update = updates.find(u => u.id === task.id);
+        return update ? { ...task, order_idx: update.order_idx } : task;
+      })
+    );
+
     fetchWithAuth('/api/tasks/batch-update', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -111,17 +197,26 @@ export default function MainAppUI({ fetchWithAuth }) {
       .then(() => refreshTasks())
       .catch((err) => {
         console.error('Batch update failed:', err);
+        setTasks(prevTasks);
         alert('Failed to reorder tasks. Please try again.');
       });
   };
 
   const handleDeleteTask = (taskId) => {
+    const prevTasks = tasks;
+
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+
     fetchWithAuth(`/api/tasks/${taskId}`, { method: "DELETE" })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to delete task");
-        refreshTasks();
       })
-      .catch((err) => console.error("Delete task failed:", err));
+      .catch((err) => {
+        console.error("Delete task failed:", err);
+        setTasks(prevTasks);
+        alert("Failed to delete task. Please try again.");
+      });
+
   };
 
   return (
@@ -130,7 +225,7 @@ export default function MainAppUI({ fetchWithAuth }) {
         goals={goals}
         selectedGoalId={selectedGoal?.id}
         onSelect={(goal) => setSelectedGoalId(goal.id)}
-        onAdd={handleAddGoalButtonClick}
+        onAdd={() => { setShowAddGoalForm(true) }}
       />
       {showAddGoalForm && (
         <AddGoalForm

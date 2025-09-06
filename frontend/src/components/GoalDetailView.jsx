@@ -6,21 +6,18 @@ import "../css/GoalDetailView.css";
 function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, refreshTasks, onDeleteGoal, onUpdateGoal, onBatchUpdateTasks }) {
     const [showAddTask, setShowAddTask] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editTitle, setEditTitle] = useState(goal?.title || "");
+    const [editTitle, setEditTitle] = useState("");
     const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
     useEffect(() => {
-        if (goal) {
-            setEditTitle(goal.title);
-        }
+        setEditTitle(goal?.title || "");
     }, [goal]);
-    
+
     if (!goal) {
         return <div className="goal-detail-view empty">Please select a goal from the sidebar.</div>;
     }
 
     const goalTasks = tasks.filter(t => t.goal_id === goal.id);
-    // console.log("tasks from goaldetailview:", goalTasks);
     const hasTopLevelTasks = goalTasks.some(t => !t.parent_id);
 
     const handleAddTaskClick = (e) => {
@@ -44,13 +41,13 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
         try {
             const res = await fetch(`/api/goals/${goal.id}/generate-plan`, {
                 method: "POST",
-                headers: {"Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json" },
             });
 
             if (!res.ok) throw new Error("Failed to generate plan");
-                        
+
             refreshTasks();
-            
+
         } catch (err) {
             console.error(err);
             alert("Could not generate plan");
@@ -86,7 +83,7 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
                 <button onClick={() => onDeleteGoal(goal.id)}>🗑️ Delete</button>
                 <button onClick={handleAddTaskClick}>Add Task</button>
                 {!hasTopLevelTasks && (
-                    <button 
+                    <button
                         onClick={handleGeneratePlan}
                         disabled={isGeneratingPlan}
                         className={`generate-plan-btn ${isGeneratingPlan ? 'loading' : ''}`}
@@ -95,11 +92,11 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
                     </button>
                 )}
             </div>
-            
+
             {showAddTask && (
-                <AddTaskForm goalId={goal.id} onSubmit={handleAddTask} onCancel={handleCancelTask}/>
+                <AddTaskForm goalId={goal.id} onSubmit={handleAddTask} onCancel={handleCancelTask} />
             )}
-            
+
             <TaskTree
                 goalId={goal.id}
                 tasks={goalTasks}
@@ -109,7 +106,6 @@ function GoalDetailView({ goal, tasks, onAddTask, onUpdateTask, onDeleteTask, re
                 refreshTasks={refreshTasks}
                 onBatchUpdateTasks={onBatchUpdateTasks}
             />
-            
         </div>
     );
 }

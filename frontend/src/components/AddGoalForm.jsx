@@ -7,16 +7,8 @@ function AddGoalForm({ onSubmit, onCancel }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (title.trim()) {
-            fetch("/api/goals", {
-                method: 'POST',
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title })
-            }).then(
-                res => res.json()
-            ).then(newGoal => {
-                onSubmit(newGoal);
-                setTitle("");
-            });
+            onSubmit(title);
+            setTitle("");
         }
     };
 

@@ -22,9 +22,9 @@ function AddTaskForm({ onSubmit, onCancel }) {
         value={title}
         onChange={e => setTitle(e.target.value)}
       />
-      <textarea 
+      <textarea
         placeholder="Description (optional)"
-        value = {description}
+        value={description}
         onChange={e => setDescription(e.target.value)}
       />
       <button type="submit">Add</button>
