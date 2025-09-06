@@ -336,7 +336,7 @@ def generate_plan_for_goal(goal_id):
                 "model": "mistral:latest",
                 "prompt": prompt.strip(),
                 "temperature": 0.2,    # less randomness
-                "max_tokens": 512     # limit output length
+                "max_tokens": 512  
             },
             timeout=120
         )

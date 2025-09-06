@@ -67,7 +67,6 @@ function LoginForm({ onLoginSuccess }) {
           <Link to="/signup">Sign up here</Link>
         </p>
       </form>
-      
     </div>
   );
 }

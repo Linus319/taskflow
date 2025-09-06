@@ -1,5 +1,4 @@
 services:
-  # dev backend
   backend-dev:
     container_name: taskapp-backend-dev
     build:
@@ -8,15 +7,16 @@ services:
     env_file:
       - .env.dev
     volumes:
-      - ./backend:/app   # Mount backend code
-    command: flask run --host=0.0.0.0 --port=5000 --reload
+      - backend_data:/app/instance
     ports:
-      - "5001:5000"   # external 5001 -> internal 5000
+      - "5001:5000"   # external -> internal
     restart: always
     networks:
       - taskapp-network
+    environment:
+      DATABASE_URL: sqlite:///dev.db
+    command: sh -c "flask db upgrade && flask run --host=0.0.0.0 --port=5000 --reload"
 
-  # dev frontend
   frontend-dev:
     container_name: taskapp-frontend-dev
     build:
@@ -26,7 +26,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "3000:3000"   # Run dev server instead of Nginx
+      - "3000:3000"   
     command: npm start
     environment:
       CHOKIDAR_USEPOLLING: "true"

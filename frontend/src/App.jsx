@@ -36,7 +36,7 @@ function App() {
   }
 
   const handleLogout = () => {
-    fetch("/api/logout", { method: "POST", credentials: "include" })
+    fetch(`/api/logout`, { method: "POST", credentials: "include" })
       .then(() => setIsLoggedIn(false))
       .catch(console.error)
   };
@@ -51,7 +51,7 @@ function App() {
             isLoggedIn ? (
               <Navigate to="/" />
             ) : (
-              <LoginForm onLoginSuccess={handleLoginSuccess} />
+              <LoginForm onLoginSuccess={handleLoginSuccess}/>
             )
           }
         />
